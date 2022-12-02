@@ -282,7 +282,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
     assert(form3.fill(Seq("hello", "world")).typedValueOpt.contains(Seq("hello", "world"))) // "hello,world"
   }
 
-  test("bind with JSON with transform".only){
+  test("bind with JSON with transform"){
     import com.greenfossil.commons.json.{*, given}
     val form: Mapping[(String, Option[JsValue])] = tuple(
       "action" -> nonEmptyText,
