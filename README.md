@@ -1,6 +1,6 @@
 # data-mapping
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Greenfossil/data-mapping/Run%20tests)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Greenfossil/data-mapping/run-tests.yml?branch=master)
 ![](https://img.shields.io/github/license/Greenfossil/data-mapping)
 ![](https://img.shields.io/github/v/tag/Greenfossil/data-mapping)
 
