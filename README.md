@@ -3,6 +3,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Greenfossil/data-mapping/run-tests.yml?branch=master)
 ![](https://img.shields.io/github/license/Greenfossil/data-mapping)
 ![](https://img.shields.io/github/v/tag/Greenfossil/data-mapping)
+![Maven Central](https://img.shields.io/maven-central/v/com.greenfossil/data-mapping_3)
 [![javadoc](https://javadoc.io/badge2/com.greenfossil/data-mapping_3/javadoc.svg)](https://javadoc.io/doc/com.greenfossil/data-mapping_3)
 
 Official Greenfossil Scala library to handle form submission.
