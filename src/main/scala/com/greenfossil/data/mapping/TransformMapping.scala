@@ -67,8 +67,8 @@ case class TransformMapping[A, B](tpe: String,
     copy(typedValueOpt =  _valueOpt, aMapping = filledAMapping, errors = errors, bindingValueOpt = _bindingValue)
 
 
-  override def setBindingPrediate(predicate: Option[String] => Boolean): Mapping[B] =
-    copy(aMapping =  aMapping.setBindingPrediate(predicate))
+  override def setBindingPredicate(predicate: Option[String] => Boolean): Mapping[B] =
+    copy(aMapping =  aMapping.setBindingPredicate(predicate))
 
   override def bindUsingPrefix(prefix: String, data: Map[String, Seq[String]]): TransformMapping[A, B] =
     bindABoundMapping(aMapping.bindUsingPrefix(prefix, data))

@@ -59,8 +59,8 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
     value.fold(this)(v => copy(mapping = mapping.setDefaultValue(v)))
 
 
-  override def setBindingPrediate(predicate: Option[String] => Boolean): Mapping[Option[A]] =
-    copy(mapping = mapping.setBindingPrediate(predicate))
+  override def setBindingPredicate(predicate: Option[String] => Boolean): Mapping[Option[A]] =
+    copy(mapping = mapping.setBindingPredicate(predicate))
 
   override def bindingValueOpt: Option[String] =
     mapping.bindingValueOpt
@@ -89,7 +89,9 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
       case Some("") => None
       case Some(other) => Some(other)
       case None => None
-    val errors = applyConstraints(boundValue)
+    val errors =
+      if mapping.hasAnyConstraints(Constraints.REQUIRED) && boundValue.isEmpty  then Nil
+      else applyConstraints(boundValue)
     val boundErrors =
     //if boundValue isDefined then retain boundMapping.error else filter out errors in the Mapping.fields
       if boundValue.isDefined then boundMapping.errors
@@ -98,7 +100,7 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
           //if boundField.bindingValue is nonEmpty then retain error else remove BinderErrors
           val nonEmptyValue = Option(boundMapping(e.key)).exists(_.bindingValueOpt.exists(_.nonEmpty))
           if nonEmptyValue then Option(e)
-          else MappingError.discardMessages(e, MappingError.BinderErrors)
+          else MappingError.discardMessages(e, MappingError.DiscardOptionalBinderErrors)
         }
     copy(mapping = boundMapping, typedValueOpt = Option(boundValue), errors = errors ++ boundErrors)
 

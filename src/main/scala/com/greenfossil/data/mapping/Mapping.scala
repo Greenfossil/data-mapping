@@ -66,7 +66,7 @@ trait Mapping[A] extends ConstraintVerifier[A]:
 
   def fillAndVerify(newValue: A)(toVerify: Boolean): Mapping[A]
 
-  def setBindingPrediate(predicate: Option[String] => Boolean): Mapping[A]
+  def setBindingPredicate(predicate: Option[String] => Boolean): Mapping[A]
 
   def bind(data: (String, String)*): Mapping[A] =
     bind(data.groupMap(_._1)(_._2))

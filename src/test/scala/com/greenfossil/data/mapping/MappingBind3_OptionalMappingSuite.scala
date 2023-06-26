@@ -762,7 +762,6 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
   test("optional phone"){
     val form = optional(phone).bindName("phoneNo")
     assertEquals(form.bind("phoneNo" -> "abc88776655").hasErrors, true)
-
     assertEquals(form.bind("phoneNo" -> "88776655").errors, Nil)
     assertEquals(form.bind().errors, Nil)
     assertEquals(form.bind("phoneNo" -> "").errors, Nil)

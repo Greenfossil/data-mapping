@@ -62,8 +62,8 @@ case class SeqMapping[A](tpe: String,
     else None
 
 
-  override def setBindingPrediate(predicate: Option[String] => Boolean): Mapping[Seq[A]] =
-    copy(elemField = elemField.setBindingPrediate(predicate))
+  override def setBindingPredicate(predicate: Option[String] => Boolean): Mapping[Seq[A]] =
+    copy(elemField = elemField.setBindingPredicate(predicate))
 
   /**
    * 

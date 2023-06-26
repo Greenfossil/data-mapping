@@ -63,7 +63,7 @@ object MappingError:
   val PHONE = "error.phone"
   val MOBILE = "error.mobile"
 
-  val BinderErrors: List[String] = List(REQUIRED, REAL, REAL_PRECISION, NUMBER, BOOLEAN, DATE, TIMESTAMP, LOCALDATETIME, LOCALTIME,YEARMONTH, UUID, EMAIL)
+  val DiscardOptionalBinderErrors: List[String] = List(REQUIRED, REAL, REAL_PRECISION, NUMBER, BOOLEAN, DATE, TIMESTAMP, LOCALDATETIME, LOCALTIME,YEARMONTH, UUID, EMAIL, PHONE, MOBILE)
 
 
   def apply(key: String, message: String) = new MappingError(key, message)

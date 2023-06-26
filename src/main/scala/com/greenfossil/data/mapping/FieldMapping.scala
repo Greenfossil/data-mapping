@@ -82,7 +82,7 @@ case class FieldMapping[A](tpe: String,
       bindingValueOpt = _bindingValue
     )
 
-  override def setBindingPrediate(predicate: Option[String] => Boolean): Mapping[A] =
+  override def setBindingPredicate(predicate: Option[String] => Boolean): Mapping[A] =
     copy(bindingPredicate = predicate)
 
   def peekBindingValue(prefix: String, data: Map[String, Seq[String]]): Option[String] =

@@ -46,12 +46,12 @@ case class ProductMapping[A](tpe: String,
   def mapping(name: String): Option[Mapping[?]] =
     mappings.toList.asInstanceOf[List[Mapping[?]]].find(_.name == name)
 
-  override def setBindingPrediate(predicate: Option[String] => Boolean): Mapping[A] =
+  override def setBindingPredicate(predicate: Option[String] => Boolean): Mapping[A] =
     val newMappings =
       mappings.map[[X] =>> Mapping[?]] {
         [X] => (x: X) => x match
           case f: Mapping[t] =>
-            f.setBindingPrediate(predicate)
+            f.setBindingPredicate(predicate)
       }
     copy(mappings = newMappings)
 
