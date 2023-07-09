@@ -16,8 +16,6 @@
 
 package com.greenfossil.data.mapping
 
-import com.greenfossil.commons.json.Json
-
 import java.time.LocalDate
 import scala.language.implicitConversions
 

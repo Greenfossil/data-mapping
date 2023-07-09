@@ -16,8 +16,6 @@
 
 package com.greenfossil.data.mapping
 
-import java.time.LocalDateTime
-
 case class AuthorizationRequest(
                                  id: Long = 0,
                                  responseType: String,
@@ -49,7 +47,6 @@ case class AuthorizationRequest(
 //                                 ipAddress: String
                                )
 
-import com.greenfossil.data.mapping.Mapping
 import com.greenfossil.data.mapping.Mapping.*
 
 class LargeCaseClassMappingSuite extends munit.FunSuite {

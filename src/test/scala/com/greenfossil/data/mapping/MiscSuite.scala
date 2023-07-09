@@ -18,7 +18,7 @@ package com.greenfossil.data.mapping
 
 class MiscSuite extends munit.FunSuite {
 
-  import Mapping.{*, given}
+  import Mapping.*
 
   import java.time.*
   import java.time.format.DateTimeFormatter

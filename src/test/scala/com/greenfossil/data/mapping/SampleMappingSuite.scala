@@ -16,8 +16,6 @@
 
 package com.greenfossil.data.mapping
 
-import java.time.format.DateTimeFormatter
-
 class SampleMappingSuite extends munit.FunSuite {
   import Mapping.* 
 

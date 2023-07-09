@@ -21,7 +21,6 @@ package com.greenfossil.data.mapping
  */
 class MappingBind2_ProductMappingSuite extends munit.FunSuite {
   import Mapping.*
-  import com.greenfossil.commons.json.Json
 
   import java.time.LocalDate
 

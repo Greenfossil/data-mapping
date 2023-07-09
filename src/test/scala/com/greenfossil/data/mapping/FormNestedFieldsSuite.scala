@@ -16,8 +16,6 @@
 
 package com.greenfossil.data.mapping
 
-import com.greenfossil.commons.json.Json
-
 import scala.language.implicitConversions
 
 class FormNestedFieldsSuite extends munit.FunSuite {

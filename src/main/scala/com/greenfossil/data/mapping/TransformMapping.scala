@@ -18,8 +18,6 @@ package com.greenfossil.data.mapping
 
 import com.greenfossil.commons.json.JsValue
 
-import scala.util.Try
-
 case class TransformMapping[A, B](tpe: String,
                                   typedValueOpt: Option[B] = None,
                                   bindingValueOpt: Option[String] = None,

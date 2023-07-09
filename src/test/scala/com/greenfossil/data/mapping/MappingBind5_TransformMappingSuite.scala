@@ -16,8 +16,6 @@
 
 package com.greenfossil.data.mapping
 
-import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
-import java.time.{LocalDate, LocalTime}
 import scala.util.Try
 
 class MappingBind5_TransformMappingSuite extends munit.FunSuite {
@@ -283,7 +281,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
   }
 
   test("bind with JSON with transform"){
-    import com.greenfossil.commons.json.{*, given}
+    import com.greenfossil.commons.json.*
     val form: Mapping[(String, Option[JsValue])] = tuple(
       "action" -> nonEmptyText,
       "value" -> nonEmptyText

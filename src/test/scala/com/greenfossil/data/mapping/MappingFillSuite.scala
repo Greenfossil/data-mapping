@@ -16,8 +16,7 @@
 
 package com.greenfossil.data.mapping
 
-import java.time.format.DateTimeFormatter
-import java.time.temporal.{ChronoUnit, TemporalUnit}
+import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime, LocalTime, YearMonth}
 
 class MappingFillSuite extends munit.FunSuite {
