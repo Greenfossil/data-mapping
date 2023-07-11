@@ -167,8 +167,7 @@ trait MappingInlines:
     text(trim = true)
 
   inline def text(trim: Boolean): FieldMapping[String] =
-    val textMapping = FieldMapping("String", binder = Binder.stringFormat)
-    if trim then textMapping.copy(bindingValuePreProcess = (x: String) => Option(x).map(_.trim).orNull) else textMapping
+    text(s => if !trim then s else  Option(s).map(_.trim).orNull)
 
   inline def text(minLength: Int, maxLength: Int, trim: Boolean): FieldMapping[String] =
     val textMapping = text(trim)
@@ -181,13 +180,38 @@ trait MappingInlines:
     nonEmptyText(trim = true)
 
   inline def nonEmptyText(trim: Boolean): FieldMapping[String] =
-    val textMapping = FieldMapping("String", binder = Binder.stringFormat, constraints = Seq(Constraints.nonEmpty))
-    if trim then textMapping.copy(bindingValuePreProcess = _.trim) else textMapping
+    text(s => if !trim then s else  Option(s).map(_.trim).orNull, Seq(Constraints.nonEmpty))
 
   inline def nonEmptyText(minLength: Int, maxLength: Int, trim: Boolean): FieldMapping[String] =
-    val textMapping = FieldMapping("String", binder = Binder.stringFormat,
-      constraints = Seq(Constraints.nonEmpty, Constraints.minLength(minLength), Constraints.maxLength(maxLength)))
-    if trim then textMapping.copy(bindingValuePreProcess = _.trim) else textMapping
+    text(s => if !trim then s else  Option(s).map(_.trim).orNull,
+      Seq(Constraints.nonEmpty, Constraints.minLength(minLength), Constraints.maxLength(maxLength)))
+
+  /**
+   * Default formatter for the `String` type, it checks if the value is missing i.e. None.
+   *
+   */
+
+  import scala.util.matching.Regex
+
+  val HTMLSanitizePat: Regex = "(?i)<script.*>.*</script>|(on.+?|src)=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
+
+  private def htmlSanitize(s: String, replacer: Regex.Match => String): String =
+    Option(s).map(s => HTMLSanitizePat.replaceAllIn(s, replacer) ).orNull
+
+  inline def htmlText: FieldMapping[String] =
+    htmlText(_ => "")
+
+  inline def htmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
+    text(htmlSanitize(_, replacer))
+
+  def text(bindingPreprocessor: String => String, constraints: Seq[Constraint[String]] = Nil): FieldMapping[String] =
+    FieldMapping("String", binder = Binder.stringFormat, bindingValuePreProcess = bindingPreprocessor, constraints = constraints)
+
+  inline def nonEmptyHtmlText: FieldMapping[String] =
+    nonEmptyHtmlText(_ => "")
+
+  inline def nonEmptyHtmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
+    text(htmlSanitize(_, replacer), Seq(Constraints.nonEmpty))
 
   inline def email: Mapping[String] =
     text.verifying(Constraints.emailAddress)

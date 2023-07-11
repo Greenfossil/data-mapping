@@ -1,13 +1,13 @@
 val scala3Version = "3.3.0"
 
-scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
+scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions", "-Wunused:all")
 
 lazy val dataMapping = project
   .in(file("."))
   .settings(
     name := "data-mapping",
     organization := "com.greenfossil",
-    version := "1.0.5-RC1",
+    version := "1.0.5-RC2",
 
     scalaVersion := scala3Version,
 
