@@ -138,4 +138,29 @@ class MappingBugSuite extends munit.FunSuite {
     )
   }
 
+  /**
+   * Findings:
+   * SeqMapping#boundFieldsWithPadding uses SeqMapping#boundValueIndexes to calculate the remaining fields to create.
+   * But SeqMapping#boundValueIndexes is Nil if the field has error.
+   * It should use SeqMapping#boundFields fields instead.
+   *
+   * Bug found in SeqMapping#boundFieldsWithPadding(int, scala.Function2) - Line 75
+   *
+   */
+  test("SeqMapping.boundFieldsWithPadding should retain field count on error") {
+    val form = Mapping("user",
+      repeatedTuple(
+        "lastname" -> nonEmptyText,
+        "firstname" -> nonEmptyText,
+      )
+    )
+
+    val bindForm = form.bind(Map("user[0].lastname" -> Nil, "user[0].firstname" -> Nil))
+    val seqMapping = bindForm("user").asInstanceOf[SeqMapping[(String, String)]]
+    val remappedBoundFields = seqMapping.boundFieldsWithPadding(1)([A] => (mapping: Mapping[A], row: Int) =>
+      mapping.name(s"${mapping.bindingName}[$row]"))
+
+    assertEquals(remappedBoundFields.size, 1)
+  }
+
 }

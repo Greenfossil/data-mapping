@@ -72,7 +72,7 @@ case class SeqMapping[A](tpe: String,
    * @return - at least the minReturnSize size of the Seq of Mapping
    */
   def boundFieldsWithPadding(minReturnSize: Int)(mappingConversionFn: [A] => (Mapping[A], Int) => Mapping[A]): Seq[Mapping[A]] =
-    val padCount = Math.max(minReturnSize - boundValueIndexes.size, 0)
+    val padCount = Math.max(minReturnSize - boundFields.size, 0)
     val paddedMappings = (0 until padCount).map(_ => elemField)
     (boundFields ++ paddedMappings).zipWithIndex.map{case (mapping, index) => mappingConversionFn(mapping, index)}
 
