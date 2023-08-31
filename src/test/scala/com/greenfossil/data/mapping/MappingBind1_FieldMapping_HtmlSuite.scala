@@ -146,4 +146,13 @@ class MappingBind1_FieldMapping_HtmlSuite extends munit.FunSuite {
 
   }
 
+  test("html - Clean html and should not remove any text"){
+    val htmlValue =
+      """<p>Dear Homer,<p><p>Please proceed with the your order.
+        |To confirm the delivery, please login to <a href="http://www.example.com/>your account</a>.""".stripMargin
+
+    val form = htmlText.name("value").bind("value" -> htmlValue)
+    assertEquals(form.typedValueOpt, Some(htmlValue))
+  }
+
 }

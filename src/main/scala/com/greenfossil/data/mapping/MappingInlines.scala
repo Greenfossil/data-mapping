@@ -193,7 +193,7 @@ trait MappingInlines:
 
   import scala.util.matching.Regex
 
-  val HTMLSanitizePat: Regex = "(?i)<script.*>.*</script>|(on.+?|src)=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
+  val HTMLSanitizePat: Regex = "(?i)<script.*>.*</script>|(on(abort|blur|canplay|canplaythrough|change|click|dblclick|durationchange|emptied|ended|error|focus|keydown|keypress|keyup|load|loadeddata|loadedmetadata|loadstart|mousedown|mousemove|mouseout|mouseover|mouseup|pause|play|playing|progress|ratechange|reset|seeked|seeking|select|stalled|submit|suspend|timeupdate|volumechange|waiting)[!#$%&()*~+\\-_,:;?@\\[\\]/\\\\^`=\\.\\|]*|src)\\s*=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
 
   private def htmlSanitize(s: String, replacer: Regex.Match => String): String =
     Option(s).map(s => HTMLSanitizePat.replaceAllIn(s, replacer) ).orNull
