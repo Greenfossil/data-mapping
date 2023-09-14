@@ -16,6 +16,7 @@
 
 package com.greenfossil.data.mapping
 
+import com.greenfossil.data.mapping
 import com.typesafe.config.ConfigFactory
 
 import scala.util.matching.Regex
@@ -68,10 +69,8 @@ trait Constraints:
       then Invalid(ValidationError(errorMessage))
       else if (e.trim.isEmpty) Invalid(ValidationError(errorMessage))
       else
-        emailRegex
-          .findFirstMatchIn(e)
-          .map(_ => Valid)
-          .getOrElse(Invalid(ValidationError(errorMessage)))
+        if emailRegex.matches(e) then Valid
+        else Invalid(ValidationError(errorMessage))
   }
 
   /**
@@ -89,10 +88,8 @@ trait Constraints:
       then Invalid(ValidationError(errorMessage))
       else if (e.trim.isEmpty) Invalid(ValidationError(errorMessage))
       else
-        phoneRegex
-          .findFirstMatchIn(e)
-          .map(_ => Valid)
-          .getOrElse(Invalid(ValidationError(errorMessage)))
+        if phoneRegex.matches(e) then Valid
+        else Invalid(ValidationError(errorMessage))
   }
 
   /**
@@ -110,10 +107,8 @@ trait Constraints:
       then Invalid(ValidationError(errorMessage))
       else if (e.trim.isEmpty) Invalid(ValidationError(errorMessage))
       else
-        mobileRegex
-          .findFirstMatchIn(e)
-          .map(_ => Valid)
-          .getOrElse(Invalid(ValidationError(errorMessage)))
+        if mobileRegex.matches(e) then Valid
+        else Invalid(ValidationError(errorMessage))
   }
 
   /**
