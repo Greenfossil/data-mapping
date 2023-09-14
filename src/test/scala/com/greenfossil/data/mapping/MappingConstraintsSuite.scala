@@ -33,6 +33,14 @@ class MappingConstraintsSuite extends munit.FunSuite {
     assertEquals(validField.errors, Nil)
   }
 
+  test("email constrains") {
+    val form = Mapping("email", email)
+    val hasErrors = form
+      .bind("email" -> "supp ort@greenfossil.com")
+      .hasErrors
+    assert(hasErrors)
+  }
+
   test("email"){
     val f = email.name("f")
     val errorField = f.bind("f" -> "https://www.google.com")
