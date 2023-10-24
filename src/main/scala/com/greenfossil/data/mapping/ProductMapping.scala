@@ -197,7 +197,7 @@ case class ProductMapping[A](tpe: String,
       [A] => (a: A) => a match
         case m: Mapping[?] => m.filterErrors(predicate)
     )
-    copy(errors = errors.filter(predicate), newMappings)
+    copy(errors = errors.filter(predicate), mappings = newMappings)
 
 
   override def noOfFields: Int =
