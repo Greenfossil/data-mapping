@@ -16,6 +16,8 @@
 
 package com.greenfossil.data.mapping
 
+import scala.annotation.unused
+
 /*
  * Test Tuple, CaseClass Field
  */
@@ -30,8 +32,8 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
       "f2" -> number
     )
 
-    val f1 = tf("f1")
-    val f2 = tf("f2")
+    @unused val f1 = tf("f1")
+    @unused val f2 = tf("f2")
     assertEquals(tf.apply("f1").typedValueOpt, None)
   }
 
@@ -76,8 +78,8 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
       "seq" -> seq[Int]
     )
     val boundForm = form.bind("long" -> "1", "text" -> "hello", "seq[1]" -> "1", "seq[2]" -> "2")
-    val a = boundForm("long")
-    val x = boundForm("long").typedValueOpt
+    @unused val a = boundForm("long")
+    @unused val x = boundForm("long").typedValueOpt
     assertEquals[Any, Any](boundForm("long").typedValueOpt, Option(1))
     assertEquals[Any, Any](boundForm("text").typedValueOpt, Option("hello"))
     assertEquals[Any, Any](boundForm("seq").typedValueOpt, Option(Seq(1, 2)))
@@ -106,7 +108,7 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
 
     form.bind("l" -> "1", "s" -> "text", "xs[1]" -> "1", "xs[2]" -> "2")
       .fold(
-        errorForm => fail("Should not have error form"),
+        _ => fail("Should not have error form"),
         data => assertEquals(data, (1L, "text", Seq(1L, 2L)))
       )
   }
@@ -123,7 +125,7 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
       errorForm => {
         assertEquals(errorForm.errors.size, 1)
       },
-      data => fail("should not return invalid data")
+      _ => fail("should not return invalid data")
     )
   }
 
@@ -132,7 +134,7 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
     assertEquals(form.typedValueOpt, Some("Homer"))
 
     form.fold(
-      errorForm => fail("Should not have error"),
+      _ => fail("Should not have error"),
       name => {
         assertNoDiff(name, "Homer")
       }
@@ -175,15 +177,15 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
   }
 
   test("form verifying") {
-    val userFormConstraints: Mapping[UserData] = mapping[UserData](
+    mapping[UserData](
       "name" -> text,
       "age" -> number
-    ).verifying("Bad data", userData => true)
+    ).verifying("Bad data", _ => true)
 
-    val tupleField: Mapping[(String, Int)] = tuple(
+    tuple(
       "name" -> text, //FIXME .transform[Int](s => s.toInt, int => int.toString),
       "age" -> number
-    ).verifying("Bad data", tuple => true)
+    ).verifying("Bad data", _ => true)
 
   }
 

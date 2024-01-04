@@ -272,7 +272,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(boundForm.typedValueOpt, Some((Option("Homer"), Option(50))))
 
     boundForm.fold(
-      errorForm => fail("should not have error"),
+      _ => fail("should not have error"),
       {
         case (nameOpt, ageOpt) =>
           assertEquals(nameOpt, Option("Homer"))
@@ -287,7 +287,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(boundForm.typedValueOpt, Some((Option("Homer"), Option(50))))
 
     boundForm.fold(
-      errorForm => fail("should not have error"),
+      _ => fail("should not have error"),
       {
         case (nameOpt, ageOpt) =>
           assertEquals(nameOpt, Option("Homer"))
@@ -302,9 +302,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(boundForm.typedValueOpt, Some((Option("Homer"), None)))
 
     boundForm.fold(
-      errorForm => {
-        fail("should not have error")
-      },
+      _ => fail("should not have error"),
       {
         case (nameOpt, ageOpt) =>
           assertEquals(nameOpt, Option("Homer"))
@@ -633,7 +631,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
       errorForm => {
         println(s"errorForm.errors = ${errorForm.errors}")
       },
-      tup => fail("should have errors")
+      _ => fail("should have errors")
     )
   }
 

@@ -60,7 +60,7 @@ class MappingBind8_CheckedMappingSuite extends munit.FunSuite {
 
     val boundForm = form.bind("defaultText" -> "Bar", "isChecked" -> "true")
     boundForm.fold(
-      errorForm => fail("Should not have error"),
+      _ => fail("Should not have error"),
       data =>
         assertEquals(data, ("Bar", true))
     )
@@ -74,7 +74,7 @@ class MappingBind8_CheckedMappingSuite extends munit.FunSuite {
 
     val filledForm = form.bind("defaultText" -> "", "isChecked" -> "true") //Note: Binding value will not be null
     filledForm.fold(
-      errorForm => fail("should not have errors"),
+      _ => fail("should not have errors"),
       data => {
         assertEquals(data, ("Foo", true))
       }

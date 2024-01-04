@@ -107,7 +107,7 @@ class MappingConstraintsSuite extends munit.FunSuite {
     assert(validField.errors.isEmpty)
 
     val validField2 = f.bind("f" -> "    ")
-    assert(validField.errors.isEmpty)
+    assert(validField2.errors.isEmpty)
   }
 
   test("byte number"){

@@ -242,7 +242,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
     assertEquals(basicFilterForm.bind("filters" -> "").typedValueOpt, Option(Nil))
 
     basicFilterForm.bind()
-      .fold(errorForm => fail("should not fail"), value => assertEquals(value, Nil))
+      .fold(_ => fail("should not fail"), value => assertEquals(value, Nil))
   }
 
   test("bind and fold with transform to case class with transform using default") {
@@ -258,7 +258,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
 
     assertEquals(basicFilterForm.bind("query" -> "jake").typedValueOpt, Option(SearchParam("jake")))
     basicFilterForm.bind("query" -> "jake")
-      .fold(errorForm => fail("should not fail"), value => assertEquals(value, SearchParam(query = "jake"))
+      .fold(_ => fail("should not fail"), value => assertEquals(value, SearchParam(query = "jake"))
 
       )
   }

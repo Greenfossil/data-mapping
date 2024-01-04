@@ -16,6 +16,8 @@
 
 package com.greenfossil.data.mapping
 
+import scala.annotation.unused
+
 class ProductMappingPathAccessSuite extends munit.FunSuite {
   import Mapping.*
 
@@ -118,9 +120,9 @@ class ProductMappingPathAccessSuite extends munit.FunSuite {
     assertEquals[Any, Any](bart, Option(Option("Bart")))
     assertEquals[Any, Any](lisa, Option(Option("Lisa")))
 
-    val a = boundForm("children")
-    val b = boundForm("children[0]")
-    val c = boundForm("children[0].firstname")
+    @unused val a = boundForm("children")
+    @unused val b = boundForm("children[0]")
+    @unused val c = boundForm("children[0].firstname")
 
     assertEquals(boundForm("children[0].firstname").typedValueOpt, boundForm("children")(0)("firstname").typedValueOpt)
     assertEquals(boundForm("children[0].firstname").errors, boundForm("children")(0)("firstname").errors)

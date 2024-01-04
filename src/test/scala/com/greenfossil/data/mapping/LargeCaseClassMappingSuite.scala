@@ -48,12 +48,13 @@ case class AuthorizationRequest(
                                )
 
 import com.greenfossil.data.mapping.Mapping.*
+import scala.annotation.unused
 
 class LargeCaseClassMappingSuite extends munit.FunSuite {
 
   test("large case class"){
 
-    val largeCaseClassForm = Mapping.mapping[AuthorizationRequest](
+    @unused val largeCaseClassForm = Mapping.mapping[AuthorizationRequest](
       "id" -> longNumber,
       "responseType" -> text,
       "clientId" -> text,
