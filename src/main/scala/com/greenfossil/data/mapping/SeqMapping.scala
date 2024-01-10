@@ -51,10 +51,7 @@ case class SeqMapping[A](tpe: String,
       copy(elemField = elemField.setDefaultValue(v))
     }
 
-  def boundValueIndexes: Seq[Int] =
-    typedValueOpt match
-      case Some(xs: Seq[?]) => xs.indices.toList
-      case _ => Nil
+  def boundValueIndexes: Seq[Int] = boundFields.indices.toList
 
   override def boundValueOf(index: Int): Option[?] =
     if boundFields.indices.contains(index)

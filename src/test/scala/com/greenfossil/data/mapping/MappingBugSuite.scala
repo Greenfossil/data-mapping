@@ -163,4 +163,20 @@ class MappingBugSuite extends munit.FunSuite {
     assertEquals(remappedBoundFields.size, 1)
   }
 
+  test("SeqMapping.boundValueIndexes should show the correct value even if the form binding has errors"){
+    val form = repeatedTuple(
+      "id" -> longNumber,
+      "name" -> nonEmptyText
+    ).name("users")
+
+    val bindForm = form.bind(
+      "users[0].id" -> "", "users[0].name" -> "Homer",
+      "users[1].id" -> "", "users[1].name" -> "Marge",
+    )
+    assertEquals(bindForm.boundValueIndexes.size, 2)
+
+    val filledForm = form.fill(Seq(1L -> "Homer", 2L -> "Marge"))
+    assertEquals(filledForm.boundValueIndexes.size, 2)
+  }
+
 }
