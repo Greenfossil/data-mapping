@@ -44,7 +44,9 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
    * @return
    */
   def apply[B](key: String): Mapping[B] =
-    mapping.apply(key)
+    mapping match
+      case field: FieldMapping[A] => this.asInstanceOf[Mapping[B]]
+      case _ => mapping.apply(key)
 
   def apply[A](index: Int): Mapping[A] =
     mapping.apply(index)
