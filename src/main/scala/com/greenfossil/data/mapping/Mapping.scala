@@ -119,6 +119,8 @@ trait Mapping[A] extends ConstraintVerifier[A]:
   override def toString: String =
     s"name:$name type:$tpe value:$typedValueOpt"
 
+  def showFields: String =  ??? //TODO
+
   private def findDotPathMapping(rootMapping: Mapping[?], key: String): Option[Mapping[?]] =
     val pathParts = key.split("\\.")
     val (_rootMapping: Seq[Mapping[?]], _pathParts: Array[String]) =

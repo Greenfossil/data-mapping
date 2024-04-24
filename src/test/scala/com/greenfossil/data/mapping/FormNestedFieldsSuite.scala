@@ -44,6 +44,32 @@ class FormNestedFieldsSuite extends munit.FunSuite {
 
   }
 
+  test("bind nested case-class") {
+    case class Address(postalCode: String, country: String, phoneOpt: Option[String])
+    case class User(name: String , address: Address)
+    val form: Mapping[User] = mapping[User](
+      "name" -> text,
+      "address" -> mapping[Address](
+        "postalCode" -> text,
+        "country" -> text,
+        "phoneOpt" -> optional(text)
+      )
+    )
+
+    assertNoDiff(form("name").tpe, "String")
+    assertNoDiff(form("address").tpe, "P+")
+
+    val boundForm = form.bind(
+      "name" -> "Homer",
+      "address.postalCode" -> "123456",
+      "address.country" -> "Singapore",
+      "address.phoneOpt" -> "12345"
+    )
+
+    assertEquals(boundForm.typedValueOpt, Some(User("Homer", Address("123456", "Singapore", Some("12345")))))
+
+  }
+
   test("bind repeating case class field") {
     case class Address(postalCode: String, country: String)
     val form: Mapping[(Long, Seq[Address])] = tuple(
