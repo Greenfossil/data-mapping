@@ -458,8 +458,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     form.bind("name" -> "homer").fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not have errors")
+        fail(s"should not have errors ${errorForm}")
       },
       nameOpt => {
         assertEquals(nameOpt, Option("homer"))
@@ -471,8 +470,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     form.bind("age" -> "1").fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not have errors")
+        fail(s"should not have errors ${errorForm}")
       },
       nameOpt =>
         assertEquals(nameOpt, None)
@@ -486,7 +484,6 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     ))
 
     val boundNameField = field.bind("student.name" -> "homer")
-    println(s"boundNameField.errors = ${boundNameField.errors}")
     assertEquals(boundNameField.typedValueOpt, Option("homer" -> None))
     assert(!boundNameField.hasErrors, "should not have errors")
 
@@ -595,8 +592,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     form.bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not have errors")
+        fail(s"should not have errors ${errorForm}")
       },
       tup =>
         assertEquals(tup, (None, None))
@@ -612,8 +608,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     form.bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not have errors")
+        fail(s"should not have errors ${errorForm}")
       },
       tup =>
         assertEquals(tup, Name(None, None))
@@ -628,9 +623,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     ).verifying("name must be homer", name => name.firstname.contains("homer"))
 
     form.bind().fold(
-      errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-      },
+      _ => (),
       _ => fail("should have errors")
     )
   }
@@ -640,8 +633,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     form.bind("firstname" -> "").fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not have errors")
+        fail(s"should not have errors ${errorForm}")
       },
       data =>
         assertEquals(data, None)
@@ -739,10 +731,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
   test("optional verifying"){
     val form = optional(text).name("verifier")
       .verifying("Reject code verifier, length must be min:43 characters or max:128 characters",
-        _.forall { value =>
-          println(s"value = ${value.length}  [${value}]")
-          !(value.length < 43 || value.length > 128)
-        }
+        x => x.forall { value => !(value.length < 43 || value.length > 128) }
       )
 
     val boundMissingValueForm = form.bind()

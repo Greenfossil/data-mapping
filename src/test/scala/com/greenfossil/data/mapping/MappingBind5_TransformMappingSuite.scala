@@ -76,8 +76,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
 
     basicFilterForm.bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not fail")
+        fail(s"should not fail ${errorForm}")
       },
       value => {
         assertEquals(value, Nil)
@@ -106,8 +105,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
 
     basicFilterForm.bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not fail")
+        fail(s"should not fail ${errorForm}")
       },
       value => {
         assertEquals(value, Nil)
@@ -130,8 +128,7 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
 
     boundForm.fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not fail")
+        fail(s"should not fail ${errorForm}")
       },
       value => {
         assertEquals(value, SearchParam(query = "jake"))

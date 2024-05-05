@@ -57,7 +57,7 @@ class MappingBind2_ProductMappingSuite extends munit.FunSuite {
     assertEquals(boundField.typedValueOpt, Some(("Hello", 1)))
     assertEquals(boundField.boundValueIndexes, Seq(0))
     assertEquals(boundField.boundValueOf(0),Some(("Hello", 1)))
-    println(s"boundField.bindingValue = ${boundField.bindingValueOpt}")
+    assertEquals(boundField.bindingValueOpt,None)
   }
 
   test("CaseClass Mapping 2 fields") {

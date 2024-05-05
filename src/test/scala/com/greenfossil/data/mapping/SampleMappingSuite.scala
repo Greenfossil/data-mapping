@@ -99,7 +99,6 @@ class SampleMappingSuite extends munit.FunSuite {
     //Filled field
     val whenValue = "13:30:00" //DateTimeFormatter.ofPattern("HH:mm:ss").format(when)
     val when = java.time.LocalTime.parse(whenValue) //java.time.LocalTime.now
-    println(s"...whenValue = ${whenValue}")
     val filledField = field.fill(when)
     assertEquals(filledField.typedValueOpt, Option(when))
     assertEquals(filledField.bindingValueOpt, Option(whenValue))

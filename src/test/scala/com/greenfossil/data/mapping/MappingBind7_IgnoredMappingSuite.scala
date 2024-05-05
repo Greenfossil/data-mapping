@@ -69,8 +69,7 @@ class MappingBind7_IgnoredMappingSuite extends munit.FunSuite {
   test("bind to ignored[Map]") {
     Mapping("context", ignored(Map.empty[String, Any])).bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
-        fail("should not have errors")
+        fail(s"should not have errors ${errorForm}")
       },
       contextMap => {
         assertEquals(contextMap, Map.empty[String, Any])

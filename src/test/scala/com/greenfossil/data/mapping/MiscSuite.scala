@@ -21,7 +21,6 @@ class MiscSuite extends munit.FunSuite {
   import Mapping.*
 
   import java.time.*
-  import java.time.format.DateTimeFormatter
 
   def dateListForm: Mapping[List[LocalDate]] = Mapping("dates", list(localDateUsing("dd/MM/YY")))
   def dateSeqForm: Mapping[Seq[LocalDate]] = Mapping("dates", seq(localDateUsing("dd/MM/YY")))
@@ -36,9 +35,6 @@ class MiscSuite extends munit.FunSuite {
   }
 
   test("LocalTime") {
-    val df = DateTimeFormatter.ofPattern("h:mm a")
-    println(df.format(LocalTime.now))
-
     assertEquals(localTime.fill(LocalTime.of(13, 0)).typedValueOpt, Option(LocalTime.of(13, 0)))
     assertEquals(localTime.name("time").bind("time" -> "13:00").typedValueOpt, Option(LocalTime.of(13, 0)))
     assertEquals(localTimeUsing("h:mm a").name("time").bind("time" -> "1:00 pm").typedValueOpt, Option(LocalTime.of(13, 0)))

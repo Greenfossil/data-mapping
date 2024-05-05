@@ -159,14 +159,15 @@ class MappingBind4_SeqMappingSuite extends munit.FunSuite {
 
     assertEquals(remappedBoundField(0)("name").name, "tups[0].name")
     assertEquals(remappedBoundField(0)("name").typedValueOpt, Some("homer"))
+    assertEquals(remappedBoundField(0)("age").name, "tups[0].age")
+    assertEquals(remappedBoundField(0)("age").typedValueOpt, Some(42))
     
     assertEquals(remappedBoundField(1)("age").name, "tups[1].age")
     assertEquals(remappedBoundField(1)("age").typedValueOpt, None)
+    assertEquals(remappedBoundField(1)("age").name, "tups[1].age")
+    assertEquals(remappedBoundField(1)("age").typedValueOpt, None)
 
-    remappedBoundField.foreach { m =>
-      println(s"m = ${m("name")}")
-      println(s"m = ${m("age")}")
-    }
+    assertEquals(remappedBoundField.size, 2)
   }
 
   test("seq inside a repeatedTuple"){

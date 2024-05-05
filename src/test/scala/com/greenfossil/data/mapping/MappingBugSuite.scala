@@ -36,7 +36,6 @@ class MappingBugSuite extends munit.FunSuite {
 
     val filledIssueForm = issueForm.fill("")
 
-    println(s"filledIssueForm.errors = ${filledIssueForm.errors}")
     assert(filledIssueForm.errors.isEmpty)
 
   }
@@ -46,7 +45,6 @@ class MappingBugSuite extends munit.FunSuite {
       .verifying("Left must be >= right", {case t: (Int, Int) => t._1 >= t._2})
 
     val filledForm = form.fill(0, 5)
-    println(s"filledForm.errors = ${filledForm.errors}")
     assert(filledForm.errors.isEmpty)
   }
 
@@ -114,7 +112,6 @@ class MappingBugSuite extends munit.FunSuite {
 
     form.bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
         assertEquals(errorForm.errors.size, 2)
       },
       tup => fail(s"this should fail ${tup}")
@@ -131,7 +128,6 @@ class MappingBugSuite extends munit.FunSuite {
 
     form.bind().fold(
       errorForm => {
-        println(s"errorForm.errors = ${errorForm.errors}")
         assertEquals(errorForm.errors.size, 2)
       },
       tup => fail (s"this should fail ${tup}")
