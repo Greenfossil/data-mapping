@@ -127,7 +127,9 @@ case class ProductMapping[A](tpe: String,
     val fieldsErrors: List[MappingError] = newMappings.toList.collect { case f: Mapping[t] => f.errors }.flatten
 
     val boundFieldValues: Any *: Tuple =
-      newMappings.map[[A] =>> Any] {
+      //FIXED  https://github.com/scala/scala3/issues/20149
+      val newMappings1: Mapping[?] *: Tuple = newMappings
+      newMappings1.map[[A] =>> Any] {
         [X] => (x: X) => x match
           case f: Mapping[t] => safeValue(f.typedValueOpt)
       }

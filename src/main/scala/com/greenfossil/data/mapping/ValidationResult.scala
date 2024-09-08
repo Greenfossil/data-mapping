@@ -63,7 +63,7 @@ object Invalid:
    * @param args the validation error message arguments
    * @return an `Invalid` value
    */
-  def apply(error: String, args: Any*): Invalid = Invalid(Seq(ValidationError(error, args: _*)))
+  def apply(error: String, args: Any*): Invalid = Invalid(Seq(ValidationError(error, args*)))
 
 end Invalid
 
@@ -82,7 +82,7 @@ end ValidationError
 
 object ValidationError:
 
-  def apply(message: String, args: Any*) = new ValidationError(Seq(message), args: _*)
+  def apply(message: String, args: Any*) = new ValidationError(Seq(message), args*)
 
 end ValidationError
 
