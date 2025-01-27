@@ -1,4 +1,4 @@
-val scala3Version = "3.5.0"
+val scala3Version = "3.6.3"
 
 scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions", "-Wunused:all")
 
@@ -7,17 +7,17 @@ lazy val dataMapping = project
   .settings(
     name := "data-mapping",
     organization := "com.greenfossil",
-    version := "1.1.1",
+    version := "1.2.0",
 
     scalaVersion := scala3Version,
 
     Compile / javacOptions ++= Seq("-source", "17"),
 
     libraryDependencies ++= Seq(
-      "com.greenfossil" %% "commons-json" % "1.1.1",
+      "com.greenfossil" %% "commons-json" % "1.2.0",
       "com.typesafe" % "config" % "1.4.3",
-      "org.slf4j" % "slf4j-api" % "2.0.12",
-      "ch.qos.logback" % "logback-classic" % "1.5.6" % Test,
+      "org.slf4j" % "slf4j-api" % "2.0.16",
+      "ch.qos.logback" % "logback-classic" % "1.5.16" % Test,
       "org.scalameta" %% "munit" % "1.1.0" % Test
     )
   )
