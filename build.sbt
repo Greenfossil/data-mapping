@@ -7,14 +7,12 @@ lazy val dataMapping = project
   .settings(
     name := "data-mapping",
     organization := "com.greenfossil",
-    version := "1.2.1-RC1",
+    version := "1.2.1",
 
     scalaVersion := scala3Version,
 
-    Compile / javacOptions ++= Seq("-source", "17"),
-
     libraryDependencies ++= Seq(
-      "com.greenfossil" %% "commons-json" % "1.2.1-RC1",
+      "com.greenfossil" %% "commons-json" % "1.2.1",
       "com.typesafe" % "config" % "1.4.3",
       "org.slf4j" % "slf4j-api" % "2.0.16",
       "ch.qos.logback" % "logback-classic" % "1.5.16" % Test,
