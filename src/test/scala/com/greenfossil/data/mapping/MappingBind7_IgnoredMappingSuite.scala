@@ -20,8 +20,6 @@ class MappingBind7_IgnoredMappingSuite extends munit.FunSuite {
 
   import Mapping.*
 
-  import java.time.*
-
   test("ignored") {
 
     val field = ignored(2L).name("field")

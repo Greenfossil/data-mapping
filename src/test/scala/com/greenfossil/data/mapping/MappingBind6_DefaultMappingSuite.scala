@@ -19,8 +19,6 @@ package com.greenfossil.data.mapping
 class MappingBind6_DefaultMappingSuite extends munit.FunSuite {
   import Mapping.*
 
-  import java.time.*
-
   test("default String type") {
     val field = default(text, "Foo").name("field") // Assigned a name to the default field
 
