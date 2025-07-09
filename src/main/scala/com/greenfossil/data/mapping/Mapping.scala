@@ -174,10 +174,10 @@ trait Mapping[A] extends ConstraintVerifier[A]:
 
         (indexOpt, mappingOpt) match
           case (Some(index), Some(mapping)) => Some(mapping.apply(index))
-          case (None, Some(mapping)) => mappingOpt
+          case (None, Some(_)) => mappingOpt
           case _ => None
 
-      case s: SeqMapping[?] =>
+      case _: SeqMapping[?] =>
         if m.bindingName != _key then None
         else indexOpt.map(index => m.apply(index))
 

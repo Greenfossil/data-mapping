@@ -26,7 +26,7 @@ case class FieldMapping[A](tpe: String,
                            constraints:Seq[Constraint[A]] = Nil,
                            errors: Seq[MappingError] = Nil,
                            bindingPredicate: Option[String] => Boolean = BindingPredicate.Always,
-                           fillValueFn: (Option[A], A) => A = (oldValue: Option[A], newValue: A) => newValue,
+                           fillValueFn: (Option[A], A) => A = ( _ /*oldValue*/: Option[A], newValue: A) => newValue,
                            bindingValuePreProcess: String => String = (a:String) => a,
                            usedChildNameOpt: Option[String] = None,
                            bindingValueOpt: Option[String] = None) extends Mapping[A]:

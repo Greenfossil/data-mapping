@@ -50,7 +50,7 @@ case class ProductMapping[A](tpe: String,
     val newMappings =
       mappings.map[[X] =>> Mapping[?]] {
         [X] => (x: X) => x match
-          case f: Mapping[t] =>
+          case f: Mapping[?] =>
             f.setBindingPredicate(predicate)
       }
     copy(mappings = newMappings)
@@ -60,7 +60,7 @@ case class ProductMapping[A](tpe: String,
     val newMappings =
       mappings.map[[X] =>> Mapping[?]] {
         [X] => (x: X) => x match
-          case f: Mapping[t] =>
+          case f: Mapping[?] =>
             f.bindUsingPrefix(pathName, data)
       }
 
@@ -98,7 +98,7 @@ case class ProductMapping[A](tpe: String,
     val newMappings =
       mappings.map[[X] =>> Mapping[?]] {
         [X] => (x: X) => x match {
-          case f: Mapping[t] =>
+          case f: Mapping[?] =>
             f.bind(value)
         }
       }
@@ -124,14 +124,14 @@ case class ProductMapping[A](tpe: String,
 
     val newData: Map[String, Any] = newMappings.toList.collect { case f: Mapping[?] => f.name -> safeValue(f.typedValueOpt) }.toMap
 
-    val fieldsErrors: List[MappingError] = newMappings.toList.collect { case f: Mapping[t] => f.errors }.flatten
+    val fieldsErrors: List[MappingError] = newMappings.toList.collect { case f: Mapping[?] => f.errors }.flatten
 
     val boundFieldValues: Any *: Tuple =
       //FIXED  https://github.com/scala/scala3/issues/20149
       val newMappings1: Mapping[?] *: Tuple = newMappings
       newMappings1.map[[A] =>> Any] {
         [X] => (x: X) => x match
-          case f: Mapping[t] => safeValue(f.typedValueOpt)
+          case f: Mapping[?] => safeValue(f.typedValueOpt)
       }
 
     val boundValue: A =

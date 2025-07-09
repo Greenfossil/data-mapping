@@ -232,7 +232,7 @@ class ProductMappingPathAccessSuite extends munit.FunSuite {
 
     //Access via boundFields
     val indexedBound = boundField.asInstanceOf[SeqMapping[(String, Int)]]
-      .boundFieldsWithPadding(0)([A] => (mapping:Mapping[A], index:Int) => mapping)
+      .boundFieldsWithPadding(0)([A] => (mapping:Mapping[A], _ /*index*/:Int) => mapping)
 
     assertNoDiff(indexedBound(0).name, "contact")
     assertNoDiff(indexedBound(0)("name").name, "contact.name")

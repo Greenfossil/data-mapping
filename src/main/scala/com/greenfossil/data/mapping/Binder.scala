@@ -89,7 +89,7 @@ object Binder:
           .allCatch[T]
           .either(parse(s))
           .left
-          .map(e => Seq(MappingError(key, errMsg, errArgs)))
+          .map(_ => Seq(MappingError(key, errMsg, errArgs)))
     }
 
   private def numberFormatter[T](convert: String => T, real: Boolean = false): Binder[T] = {
@@ -161,7 +161,7 @@ object Binder:
                 .getOrElse(bd)
             }
             .left
-            .map { e =>
+            .map { _ =>
               Seq(
                 precision match 
                   case Some((p, s)) => MappingError(key, MappingError.REAL_PRECISION, Seq(p, s))
