@@ -163,7 +163,8 @@ case class ProductMapping[A](tpe: String,
   override def apply[A](key: String): Mapping[A] =
     val mapping = findMappingByName(this, key).orNull
     if (mapping == null) {
-      mappingLogger.error(s"Field [${key}] does not exist, please check code")
+      val ex = Exception(s"Field [${key}] does not exist, please check code")
+      mappingLogger.error(ex.getMessage, ex)
     }
     mapping.asInstanceOf[Mapping[A]]
 
