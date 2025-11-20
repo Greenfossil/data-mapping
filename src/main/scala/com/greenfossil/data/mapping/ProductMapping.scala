@@ -161,12 +161,12 @@ case class ProductMapping[A](tpe: String,
    * @return
    */
   override def apply[A](key: String): Mapping[A] =
-    val mapping = findMappingByName(this, key).orNull
-    if (mapping == null) {
-      val ex = Exception(s"Field [${key}] does not exist, please check code")
-      mappingLogger.error(ex.getMessage, ex)
-    }
-    mapping.asInstanceOf[Mapping[A]]
+    findMappingByName(this, key)
+      .getOrElse {
+        val ex = Exception(s"Field [${key}] does not exist, please check code")
+        mappingLogger.error(ex.getMessage, ex)
+        null
+      }.asInstanceOf[Mapping[A]]
 
   def apply[A](index: Int): Mapping[A] =
     if index == 0 then this.asInstanceOf[Mapping[A]]
