@@ -78,8 +78,8 @@ class MappingBugSuite extends munit.FunSuite {
 
   test("get constraints and errors from form"){
     val form = Mapping("firstname", nonEmptyText)
-    assertEquals(form.constraints.flatMap(_.name), Seq("constraint.required"))
-    assertEquals(form("firstname").constraints.flatMap(_.name), Seq("constraint.required"))
+    assertEquals(form.constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
+    assertEquals(form("firstname").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
 
     val boundErrorForm = form.bind()
     assertEquals(boundErrorForm.errors.map(_.message), Seq("error.required"))
@@ -91,8 +91,8 @@ class MappingBugSuite extends munit.FunSuite {
        "lastname" -> nonEmptyText
      )
     )
-    assertEquals(nestedForm("name.firstname").constraints.flatMap(_.name), Seq("constraint.required"))
-    assertEquals(nestedForm("name.lastname").constraints.flatMap(_.name), Seq("constraint.required"))
+    assertEquals(nestedForm("name.firstname").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
+    assertEquals(nestedForm("name.lastname").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
 
     val boundErrorNestedForm = nestedForm.bind("name.firstname" -> "")
     assertEquals(boundErrorNestedForm("name.lastname").errors.map(_.message), Seq("error.required"))

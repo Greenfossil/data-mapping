@@ -183,4 +183,31 @@ class MappingConstraintsSuite extends munit.FunSuite {
     val validField = field.bind("f" -> "asdf1234")
     assert(validField.errors.isEmpty)
   }
+
+  test("Positive XSS Constraint"){
+
+    val errorField1 = text.name("f").bind("f" -> "<script>alert(1)</script>")
+    assertEquals(errorField1.errors.size, 1)
+    assertEquals(errorField1.errors.head.message, MappingError.XSS_DETECTED)
+
+    val errorField2 = text.name("f").bind("f" -> "<script>alert(1)//.")
+    assertEquals(errorField2.errors.size, 1)
+    assertEquals(errorField2.errors.head.message, MappingError.XSS_DETECTED)
+
+    val errorField3 = nonEmptyText.name("f").bind("f" -> "<script>alert(1)//.")
+    assertEquals(errorField3.errors.size, 1)
+    assertEquals(errorField3.errors.head.message, MappingError.XSS_DETECTED)
+
+    assert(text.name("f").bind("f" -> "<b>safe</b>").errors.isEmpty)
+    assert(nonEmptyText.name("f").bind("f" -> "<b>safe</b>").errors.isEmpty)
+  }
+
+  test("negative XSS Constraint") {
+
+    val field1 = text.name("f").bind("f" -> "howdy")
+    assertEquals(field1.errors.size, 0)
+
+    val field2 = nonEmptyText.name("f").bind("f" -> "howdy")
+    assertEquals(field2.errors.size, 0)
+  }
 }

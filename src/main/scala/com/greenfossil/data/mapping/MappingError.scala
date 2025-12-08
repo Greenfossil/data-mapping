@@ -62,6 +62,7 @@ object MappingError:
   val EMAIL = "error.email"
   val PHONE = "error.phone"
   val MOBILE = "error.mobile"
+  val XSS_DETECTED = "error.xss.detected"
 
   val DiscardOptionalBinderErrors: List[String] = List(REQUIRED, REAL, REAL_PRECISION, NUMBER, BOOLEAN, DATE, TIMESTAMP, LOCALDATETIME, LOCALTIME,YEARMONTH, UUID, EMAIL, PHONE, MOBILE)
 

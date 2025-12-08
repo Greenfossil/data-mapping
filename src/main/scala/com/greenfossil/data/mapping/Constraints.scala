@@ -128,6 +128,14 @@ trait Constraints:
       else Valid
     }
 
+  // Validates against XSS attack patterns
+  def xssConstraint(errorMessage: String = MappingError.XSS_DETECTED): Constraint[String] =
+    Constraint[String]("constraint.xss") { o =>
+      if o == null then Valid
+      else if Mapping.HTMLSanitizePat.findFirstIn(o).isDefined then Invalid(ValidationError(errorMessage))
+      else Valid
+    }
+
   /**
    * $nonEmptyDoc
    *

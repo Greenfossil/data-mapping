@@ -193,25 +193,26 @@ trait MappingInlines:
 
   import scala.util.matching.Regex
 
-  val HTMLSanitizePat: Regex = "(?i)<script.*>.*</script>|(on(abort|blur|canplay|canplaythrough|change|click|dblclick|durationchange|emptied|ended|error|focus|keydown|keypress|keyup|load|loadeddata|loadedmetadata|loadstart|mousedown|mousemove|mouseout|mouseover|mouseup|pause|play|playing|progress|ratechange|reset|seeked|seeking|select|stalled|submit|suspend|timeupdate|volumechange|waiting)[!#$%&()*~+\\-_,:;?@\\[\\]/\\\\^`=\\.\\|]*|src)\\s*=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
+  val HTMLSanitizePat: Regex = "(?i)<\\s*script\\b[^>]*>[\\s\\S]*?(<\\/\\s*script\\s*>|$)|(on(abort|blur|canplay|canplaythrough|change|click|dblclick|durationchange|emptied|ended|error|focus|keydown|keypress|keyup|load|loadeddata|loadedmetadata|loadstart|mousedown|mousemove|mouseout|mouseover|mouseup|pause|play|playing|progress|ratechange|reset|seeked|seeking|select|stalled|submit|suspend|timeupdate|volumechange|waiting)[!#$%&()*~+\\-_,:;?@\\[\\]/\\\\^`=\\.\\|]*|src)\\s*=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
 
-  private def htmlSanitize(s: String, replacer: Regex.Match => String): String =
+  def textSanitize(s: String, replacer: Regex.Match => String): String =
     Option(s).map(s => HTMLSanitizePat.replaceAllIn(s, replacer) ).orNull
 
   inline def htmlText: FieldMapping[String] =
     htmlText(_ => "")
 
   inline def htmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
-    text(htmlSanitize(_, replacer))
+    text(textSanitize(_, replacer))
 
   def text(bindingPreprocessor: String => String, constraints: Seq[Constraint[String]] = Nil): FieldMapping[String] =
-    FieldMapping("String", binder = Binder.stringFormat, bindingValuePreProcess = bindingPreprocessor, constraints = constraints)
+    FieldMapping("String", binder = Binder.stringFormat, bindingValuePreProcess = bindingPreprocessor,
+      constraints = constraints ++ Seq(Constraints.xssConstraint()) /*XSS-Constraint must not be removed*/)
 
   inline def nonEmptyHtmlText: FieldMapping[String] =
     nonEmptyHtmlText(_ => "")
 
   inline def nonEmptyHtmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
-    text(htmlSanitize(_, replacer), Seq(Constraints.nonEmpty))
+    text(textSanitize(_, replacer), Seq(Constraints.nonEmpty))
 
   inline def email: Mapping[String] =
     text.verifying(Constraints.emailAddress)

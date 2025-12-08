@@ -155,4 +155,14 @@ class MappingBind1_FieldMapping_HtmlSuite extends munit.FunSuite {
     assertEquals(form.typedValueOpt, Some(htmlValue))
   }
 
+  test("Unclosed script tag") {
+    val field = htmlText.name("value")
+
+    val text1 = "Successfully updated <script>alert(1)//."
+    assertEquals(field.bind("value" -> text1).typedValueOpt, Option("Successfully updated "))
+
+    val text2 = "<script>a=document.createElement('a');a.href='data:text/plain,XSS';a.download='x.txt';a.click()//"
+    assertEquals(field.bind("value" -> text2).typedValueOpt, Option(""))
+  }
+
 }

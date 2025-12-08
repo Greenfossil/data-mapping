@@ -204,27 +204,27 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
   test("TransformMapping - required text to Option") {
     val form = Mapping("name", nonEmptyText.transform[Option[String]](s => Option(s), opt => opt.orNull))
 
-    assertEquals(form.constraints.flatMap(_.name), Seq("constraint.required"))
-    assertEquals(form("name").constraints.flatMap(_.name), Seq("constraint.required"))
+    assertEquals(form.constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
+    assertEquals(form("name").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
 
     val diffTypeForm = Mapping("name", nonEmptyText.transform[String](s => s.take(4), s => s.take(4)))
 
-    assertEquals(diffTypeForm.constraints.flatMap(_.name), Seq("constraint.required"))
-    assertEquals(diffTypeForm("name").constraints.flatMap(_.name), Seq("constraint.required"))
+    assertEquals(diffTypeForm.constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
+    assertEquals(diffTypeForm("name").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
 
     val tupSameTypeForm = tuple(
       "age" -> optional(number),
       "name" -> nonEmptyText.transform[Option[String]](s => Option(s), opt => opt.orNull)
     )
 
-    assertEquals(tupSameTypeForm("name").constraints.flatMap(_.name), Seq("constraint.required"))
+    assertEquals(tupSameTypeForm("name").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
 
     val tupDiffTypeForm = tuple(
       "age" -> optional(number),
       "name" -> nonEmptyText.transform[Option[String]](s => Option(s), opt => opt.orNull)
     )
 
-    assertEquals(tupDiffTypeForm("name").constraints.flatMap(_.name), Seq("constraint.required"))
+    assertEquals(tupDiffTypeForm("name").constraints.flatMap(_.name), Seq("constraint.required", "constraint.xss"))
   }
 
   test("test bind,fold with transform mapping using default") {
