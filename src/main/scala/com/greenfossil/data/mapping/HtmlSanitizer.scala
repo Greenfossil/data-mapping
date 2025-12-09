@@ -18,6 +18,7 @@ object HtmlSanitizer:
       )
       .allowAttributes("href").onElements("a")
       .allowAttributes("src", "alt", "title").onElements("img")
+      .allowAttributes("style").globally()
       .allowUrlProtocols("http", "https", "mailto")
       // Do not allow any 'on*' event attributes or script-like protocols
       .toFactory()
@@ -25,6 +26,46 @@ object HtmlSanitizer:
   def sanitize(input: String): String =
     if input == null then null
     else policy.sanitize(input)
+
+  /** Sanitizes input and preserves the original unsafe fragment as escaped text for user feedback.
+   * Returns sanitized HTML with the original offending payload shown escaped in a wrapper.
+   * Safe to render: the original payload is HTML-escaped so it cannot execute.
+   */
+  def sanitizeWithFeedback(input: String,
+                           wrapperTag: String = "span",
+                           wrapperClass: String = "xss-detected"): String =
+    if input == null then null
+    else
+      val trimmed = input.trim
+
+      // Keep JSON false-positive avoidance
+      if !trimmed.contains('<') && !trimmed.contains('&') then
+        if trimmed.startsWith("{") || trimmed.startsWith("[") then
+          try
+            jsonMapper.readTree(trimmed)
+            return input
+          catch
+            case _: Exception => ()
+
+      val sanitized = sanitize(input)
+
+      // If policy didn't change it, return sanitized (safe)
+      if sanitized.trim == trimmed then
+        sanitized
+      else
+        // Policy changed it -> unsafe detected
+        // Return: sanitized content + escaped original in wrapper for user to see what was flagged
+        val escapedOriginal = escapeHtml(input)
+        s"""$sanitized<$wrapperTag class="$wrapperClass">[XSS Detected: $escapedOriginal]</$wrapperTag>"""
+
+  // Small inline escape helper
+  def escapeHtml(s: String): String =
+    s.replace("&", "&amp;")
+     .replace("<", "&lt;")
+     .replace(">", "&gt;")
+     .replace("\"", "&quot;")
+     .replace("'", "&#x27;")
+     .replace("/", "&#x2F;")
 
   private val jsonMapper = new ObjectMapper()
 
