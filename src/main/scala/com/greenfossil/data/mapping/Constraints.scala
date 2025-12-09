@@ -132,7 +132,10 @@ trait Constraints:
   def xssConstraint(errorMessage: String = MappingError.XSS_DETECTED): Constraint[String] =
     Constraint[String]("constraint.xss") { o =>
       if o == null then Valid
-      else if Mapping.HTMLSanitizePat.findFirstIn(o).isDefined then Invalid(ValidationError(errorMessage))
+      else if HtmlSanitizer.containsUnsafe(o) then
+        val ex = IllegalArgumentException(s"Potential XSS attack detected: $o")
+        mappingLogger.error(ex.getMessage, ex)
+        Invalid(ValidationError(errorMessage))
       else Valid
     }
 

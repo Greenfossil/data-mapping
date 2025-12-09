@@ -52,7 +52,8 @@ class MappingBind2_ProductMappingJson_HtmlSuite extends munit.FunSuite {
     )
 
     val boundValueForm = form.bind(jsonObject)
-    assertEquals(boundValueForm.typedValueOpt, Some((1L, ("123456", ("", "<b>test</b>")))))
+    assertEquals(boundValueForm.errors.flatMap(_.messages).distinct, List("error.xss.detected"))
+    assertEquals(boundValueForm.typedValueOpt, Some((1L, ("123456", ("<script></script>", "<b>test</b><script>alert(1)</script>")))))
   }
 
   test("case class 3") {
@@ -68,24 +69,28 @@ class MappingBind2_ProductMappingJson_HtmlSuite extends munit.FunSuite {
       "xs[2]" -> "<script SRC=http://xss.rocks/xss.js></script>",
       "xs[3]" -> "<b>test</b><script>alert(1)</script>",
     )
+    assertEquals[Any, Any](boundMappingForm1.errors.flatMap(_.messages).distinct, List("error.xss.detected"))
     assertEquals[Any, Any](boundMappingForm1("l").typedValueOpt, Option(1))
-    assertEquals[Any, Any](boundMappingForm1("s").typedValueOpt, Option("<b>test</b>"))
-    assertEquals[Any, Any](boundMappingForm1("xs").typedValueOpt, Option(Seq("", "", "<b>test</b>")))
+    assertEquals[Any, Any](boundMappingForm1("s").typedValueOpt, Option("<b>test</b><script>alert(1)</script>"))
+    assertEquals[Any, Any](boundMappingForm1("xs").typedValueOpt,
+      Option(Seq("<script></script>", "<script SRC=http://xss.rocks/xss.js></script>", "<b>test</b><script>alert(1)</script>")))
 
     val boundMappingForm2 = form.bind("l" -> "1",
       "s" -> "<b>test</b><script>alert(1)</script>",
       "xs[0]" -> "<b>test</b><script>alert(1)</script>",
       "xs[1]" -> "<b>test</b><script>alert(1)</script>")
+    assertEquals[Any, Any](boundMappingForm2.errors.flatMap(_.messages).distinct, List("error.xss.detected"))
     assertEquals[Any, Any](boundMappingForm2("l").typedValueOpt, Option(1))
-    assertEquals[Any, Any](boundMappingForm2("s").typedValueOpt, Option("<b>test</b>"))
-    assertEquals[Any, Any](boundMappingForm2("xs").typedValueOpt, Option(Seq("<b>test</b>", "<b>test</b>")))
+    assertEquals[Any, Any](boundMappingForm2("s").typedValueOpt, Option("<b>test</b><script>alert(1)</script>"))
+    assertEquals[Any, Any](boundMappingForm2("xs").typedValueOpt, Option(Seq("<b>test</b><script>alert(1)</script>", "<b>test</b><script>alert(1)</script>")))
 
     val jsonboundForm = form.bind(Json.obj("l" -> 1,
       "s" -> "<b>test</b><script>alert(1)</script>",
       "xs" -> Json.arr("<b>test</b><script>alert(1)</script>", "<b>test</b><script>alert(1)</script>")))
-    assertEquals[Any, Any](jsonboundForm("l").typedValueOpt, Some(1))
-    assertEquals[Any, Any](jsonboundForm("s").typedValueOpt, Some("<b>test</b>"))
-    assertEquals[Any, Any](jsonboundForm("xs").typedValueOpt, Some(Seq("<b>test</b>", "<b>test</b>")))
+    assertEquals[Any, Any](jsonboundForm.errors.flatMap(_.messages).distinct, List("error.xss.detected"))
+    assertEquals[Any, Any](jsonboundForm("l").typedValueOpt, Option(1))
+    assertEquals[Any, Any](jsonboundForm("s").typedValueOpt, Option("<b>test</b><script>alert(1)</script>"))
+    assertEquals[Any, Any](jsonboundForm("xs").typedValueOpt, Option(Seq("<b>test</b><script>alert(1)</script>", "<b>test</b><script>alert(1)</script>")))
   }
 
   test("bind as JSON: JsArray to repeatedTuple") {
@@ -104,9 +109,14 @@ class MappingBind2_ProductMappingJson_HtmlSuite extends munit.FunSuite {
     )
 
     val boundForm = form.bind(jsArray)
-    assertEquals(boundForm.errors, Nil)
+    assertEquals(boundForm.errors.flatMap(_.messages).distinct, Seq("error.xss.detected"))
     assertEquals(boundForm.typedValueOpt.getOrElse(Nil),
-      Seq("<IMG >" -> false, "<b>test</b>" -> true, "<svg >"-> false))
+      Seq(
+        "<IMG onmouseover=\"alert('xxs')\">" -> false,
+        "<b>test</b><script>alert(1)</script>" -> true,
+        "<svg onload='alert(1)'>"-> false
+      )
+    )
   }
 
 

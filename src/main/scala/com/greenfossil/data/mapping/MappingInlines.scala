@@ -193,16 +193,19 @@ trait MappingInlines:
 
   import scala.util.matching.Regex
 
-  val HTMLSanitizePat: Regex = "(?i)<\\s*script\\b[^>]*>[\\s\\S]*?(<\\/\\s*script\\s*>|$)|(on(abort|blur|canplay|canplaythrough|change|click|dblclick|durationchange|emptied|ended|error|focus|keydown|keypress|keyup|load|loadeddata|loadedmetadata|loadstart|mousedown|mousemove|mouseout|mouseover|mouseup|pause|play|playing|progress|ratechange|reset|seeked|seeking|select|stalled|submit|suspend|timeupdate|volumechange|waiting)[!#$%&()*~+\\-_,:;?@\\[\\]/\\\\^`=\\.\\|]*|src)\\s*=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
+  @deprecated("to be removed", "")
+  val TextSanitizePat: Regex = "(?i)<\\s*script\\b[^>]*>[\\s\\S]*?(<\\/\\s*script\\s*>|$)|(on(abort|blur|canplay|canplaythrough|change|click|dblclick|durationchange|emptied|ended|error|focus|keydown|keypress|keyup|load|loadeddata|loadedmetadata|loadstart|mousedown|mousemove|mouseout|mouseover|mouseup|pause|play|playing|progress|ratechange|reset|seeked|seeking|select|stalled|submit|suspend|timeupdate|volumechange|waiting)[!#$%&()*~+\\-_,:;?@\\[\\]/\\\\^`=\\.\\|]*|src)\\s*=([`'\\.\"a-zA-Z0-9():\\s,#;=]|&Tab;)*".r
 
+  @deprecated("to be removed", "")
   def textSanitize(s: String, replacer: Regex.Match => String): String =
-    Option(s).map(s => HTMLSanitizePat.replaceAllIn(s, replacer) ).orNull
+    Option(s).map(s => TextSanitizePat.replaceAllIn(s, replacer) ).orNull
 
   inline def htmlText: FieldMapping[String] =
-    htmlText(_ => "")
+    text
 
-  inline def htmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
-    text(textSanitize(_, replacer))
+//  inline def htmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
+//    // replacer parameter kept for API compatibility but ignored
+//    text(s => HtmlSanitizer.sanitize(s))
 
   def text(bindingPreprocessor: String => String, constraints: Seq[Constraint[String]] = Nil): FieldMapping[String] =
     FieldMapping("String", binder = Binder.stringFormat, bindingValuePreProcess = bindingPreprocessor,
@@ -212,7 +215,7 @@ trait MappingInlines:
     nonEmptyHtmlText(_ => "")
 
   inline def nonEmptyHtmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
-    text(textSanitize(_, replacer), Seq(Constraints.nonEmpty))
+    text(identity, Seq(Constraints.nonEmpty))
 
   inline def email: Mapping[String] =
     text.verifying(Constraints.emailAddress)
