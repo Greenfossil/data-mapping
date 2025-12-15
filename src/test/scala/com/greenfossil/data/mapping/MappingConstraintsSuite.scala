@@ -209,5 +209,49 @@ class MappingConstraintsSuite extends munit.FunSuite {
 
     val field2 = nonEmptyText.name("f").bind("f" -> "howdy")
     assertEquals(field2.errors.size, 0)
+
+    val field3 = nonEmptyText.name("f").bind("f" -> "A & B")
+    assertEquals(field3.errors.size, 0)
+
+    val field4 = nonEmptyText.name("f").bind("f" -> "homer@example.com")
+    assertEquals(field4.errors.size, 0)
+
+    val field5 = nonEmptyText.name("f").bind("f" -> "1 < 2")
+    assertEquals(field5.errors.size, 0)
+  }
+
+  test("sanitize false positive") {
+    assertNoDiff(HtmlSanitizer.sanitize("1 < 2"), "1 &lt; 2")
+  }
+
+  test("HtmlSanitizer.isXssSafe") {
+    List(
+      "&",
+      "<",
+      ">",
+      "\"",
+      "'",
+      "/",
+      "",
+      "a", "z", "A", "Z", "1", "9", "[", "]",
+      "{" /*{ Policy.sanitize will append Html comment after a lone '{' */,
+      "{ 1" /* '{' with a suffix*/ ,
+      "}",
+      "homer@example.com",
+      "1 < 2",
+      "<b>safe</b>"
+    ).foreach { v =>
+        assert(HtmlSanitizer.isXssSafe(v))
+      }
+  }
+
+  test("HtmlSanitizer.isXssUnsafe") {
+    List(
+      "<script>alert(1)</script>",
+      "<script>alert(1)//.",
+      """<IMG SRC="javascript:alert('XSS');""""
+    ).foreach { v =>
+      assert(HtmlSanitizer.isXssUnSafe(v))
+    }
   }
 }
