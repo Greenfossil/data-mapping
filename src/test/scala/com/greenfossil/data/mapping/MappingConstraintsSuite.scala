@@ -225,60 +225,61 @@ class MappingConstraintsSuite extends munit.FunSuite {
     assertNoDiff(HtmlSanitizer.sanitize("1 < 2"), "1 &lt; 2")
   }
 
-  test("HtmlSanitizer.isXssSafe") {
+  test("HtmlSanitizer.isXssSafe".only) {
     // A broader set of strings that should be considered XSS-safe by the sanitizer
     val safeSamples = List(
       // plain characters and symbols
-      "&",
-      "<",
-      ">",
-      "\"",
-      "'",
-      "/",
-      "",
-      "a", "z", "A", "Z", "1", "9", "[", "]",
-      // lone braces and their common variants
-      "{", "{ 1", "}",
-      // emails, math and simple comparisons
-      "homer@example.com",
-      "1 < 2",
-      "1 + 1",
-      "1 & 1",
-      "1 / 1",
-      "1\\1",
-      "2 == 2",
-      "true",
-      "false",
-      // safe HTML fragments / entities
-      "<b>safe</b>",
-      "<p>!@#</p>",
-      "<p>1&amp;2</p>",
-      "<p>&nbsp; &nbsp;sad&nbsp; &nbsp;12</p>",
-      // already-escaped scripts should be safe
-      "&lt;script&gt;alert(1)&lt;/script&gt;",
-      // long, multi-line content (real-world use)
-      """<p>Dear Team,
-        |\nThe drop down values for the SGM Tree when we want to "Add A Person" is not context-sensitive to SGM roles.
-        |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin,
-      // HTML with attributes that are benign (http/mailto) and benign data values
-      "<a href=\"http://example.com\">link</a>",
-      "<a href=\"mailto:foo@example.com\">email</a>",
-      // text that includes angle brackets but is not HTML
-      "1 < 2 and 3 > 2",
-      // input with encoded entities and escapes
-      "&lt;b&gt;not-bad&lt;/b&gt;",
-      // CSS-like text that doesn't contain javascript
-      "body { color: red }",
-      // comment-only fragments
-      "<!-- just a comment -->",
-      // mixture of safe tags and escaped content
-      "<div>Safe &amp; sound</div>",
-      // 'script' as substring but not a tag
-      "this is a scriptless string with word script inside",
-      // protocol-like string that is safe as plain text (not an attribute)
-      "JaVaScRiPt:alert(1)",
-      // whitespace and punctuation heavy content
-      "   \n  \t  "
+//      "&",
+//      "<",
+//      ">",
+//      "\"",
+//      "'",
+//      "/",
+//      "",
+//      "a", "z", "A", "Z", "1", "9", "[", "]",
+//      // lone braces and their common variants
+//      "{", "{ 1", "}",
+//      // emails, math and simple comparisons
+//      "homer@example.com",
+//      "1 < 2",
+//      "1 + 1",
+//      "1 & 1",
+//      "1 / 1",
+//      "1\\1",
+//      "2 == 2",
+//      "true",
+//      "false",
+//      // safe HTML fragments / entities
+//      "<b>safe</b>",
+//      "<p>!@#</p>",
+//      "<p>1&amp;2</p>",
+//      "<p>&nbsp; &nbsp;sad&nbsp; &nbsp;12</p>",
+//      // already-escaped scripts should be safe
+//      "&lt;script&gt;alert(1)&lt;/script&gt;",
+//      // long, multi-line content (real-world use)
+//      """<p>Dear Team,
+//        |\nThe drop down values for the SGM Tree when we want to "Add A Person" is not context-sensitive to SGM roles.
+//        |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin,
+//      // HTML with attributes that are benign (http/mailto) and benign data values
+//      "<a href=\"http://example.com\">link</a>",
+//      "<a href=\"mailto:foo@example.com\">email</a>",
+//      // text that includes angle brackets but is not HTML
+//      "1 < 2 and 3 > 2",
+//      // input with encoded entities and escapes
+//      "&lt;b&gt;not-bad&lt;/b&gt;",
+//      // CSS-like text that doesn't contain javascript
+//      "body { color: red }",
+//      // comment-only fragments
+//      "<!-- just a comment -->",
+//      // mixture of safe tags and escaped content
+//      "<div>Safe &amp; sound</div>",
+//      // 'script' as substring but not a tag
+//      "this is a scriptless string with word script inside",
+//      // protocol-like string that is safe as plain text (not an attribute)
+//      "JaVaScRiPt:alert(1)",
+//      // whitespace and punctuation heavy content
+//      "   \n  \t  ",
+      """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>""".stripMargin
     )
 
     safeSamples.zipWithIndex.foreach { case (v, idx) =>

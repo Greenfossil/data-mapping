@@ -1,7 +1,9 @@
 package com.greenfossil.data.mapping
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.owasp.html.{Encoding, HtmlPolicyBuilder, PolicyFactory}
+import org.owasp.html.{Encoding, HtmlPolicyBuilder, PolicyFactory, AttributePolicy}
+import org.slf4j.LoggerFactory
+
 import java.util.Base64
 import java.net.URLDecoder
 
@@ -11,7 +13,26 @@ import java.net.URLDecoder
  * - `containsUnsafe` returns true when the sanitizer removed or altered input (indicating unsafe content).
  */
 object HtmlSanitizer:
-  private val policy: PolicyFactory =
+
+  private val htmlSanitizerLogger = LoggerFactory.getLogger("data-mapping.HtmlSanitizer")
+
+  val preserveStylePolicy: AttributePolicy = (elementName, attributeName, value) => value
+
+  val base64ImagePolicy: AttributePolicy = (elementName, attributeName, value) => {
+    def foo(elementName: String, attributeName: String, value: String) = {
+      if value == null then null
+      else {
+        // HTTP/HTTPS images
+        if value.matches("^https?://.+\\.(png|jpe?g|gif|webp)$") ||
+          value.matches("^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$") then value
+        else null
+      }
+    }
+
+    foo(elementName, attributeName, value)
+  }
+
+  private val policy =
     new HtmlPolicyBuilder()
       .allowElements(
         "a", "b", "i", "u", "strong", "em", "p", "ul", "ol", "li", "br",
@@ -19,9 +40,11 @@ object HtmlSanitizer:
         "tbody", "tr", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"
       )
       .allowAttributes("href").onElements("a")
-      .allowAttributes("src", "alt", "title").onElements("img")
       .allowAttributes("style").globally()
-      .allowUrlProtocols("http", "https", "mailto")
+      .allowAttributes("src", "alt", "title", "style", "width", "height").onElements("img")
+      .allowUrlProtocols("http", "https", "mailto", "data")
+      .allowAttributes("src").matching(base64ImagePolicy).onElements("img")
+      .allowAttributes("style").matching(preserveStylePolicy).onElements("img")
       // Do not allow any 'on*' event attributes or script-like protocols
       .toFactory()
 
@@ -73,7 +96,22 @@ object HtmlSanitizer:
   inline def isXssUnSafe(input: String): Boolean =
     !isXssSafe(input)
 
-  def isXssSafe(input: String): Boolean =
+  def defaultHtmlNormalizer(input: String): String =
+    input
+        .replaceAll("&nbsp;", " ")
+        .replaceAll("&amp;", "&")
+        .replaceAll("&lt;", "<")
+        .replaceAll("&gt;", ">")
+        .replaceAll("&#43;", "+")
+        .replaceAll("<br>", "<br />")
+
+  /**
+   *
+   * @param input
+   * @param normalizerFn
+   * @return
+   */
+  def isXssSafe(input: String, normalizerFn: String => String = defaultHtmlNormalizer): Boolean =
     // Normalize/guard null and short-circuit data: URIs first
     val t = if input == null then "" else input.trim
     if t.toLowerCase.startsWith("data:") then
@@ -85,16 +123,22 @@ object HtmlSanitizer:
        * If sanitization did not modify input, it is considered safe
        * If sanitization modified input, decode sanitized and compare with input
        */
-      val nonNbspInput = t.replaceAll("&nbsp;", " ") /*This is to handle Trumbowyg's auto encoding space character to nbsp*/
-      val sanitized = sanitize(nonNbspInput)
-      if nonNbspInput.equals(sanitized) then true
+      val normalizedText = normalizerFn(t) /*Function to normalize input like auto encoding space character to nbsp or correcting <b> to <b />*/
+      val sanitized = sanitize(normalizedText)
+      if normalizedText.equals(sanitized) then true
       else
         val decoded = Encoding.decodeHtml(sanitized, false)
         /*
          * Input is considered safe if sanitization did not modify it.
          * Use the decoded sanitized to compare with nonNbspInput.
          */
-        nonNbspInput.equals(decoded)
+        val isSafe = normalizedText.equals(decoded)
+        if !isSafe then
+          htmlSanitizerLogger.warn(s"XssNotSafe-input:[$input]")
+          htmlSanitizerLogger.warn(s"XssNotSafe-sanitized:[$sanitized]")
+          htmlSanitizerLogger.warn(s"XssNotSafe-normalizedText:[$normalizedText]")
+          htmlSanitizerLogger.warn(s"XssNotSafe-decoded:[$decoded]")
+        isSafe
 
 
   /** Sanitizes input and preserves the original unsafe fragment as escaped text for user feedback.
