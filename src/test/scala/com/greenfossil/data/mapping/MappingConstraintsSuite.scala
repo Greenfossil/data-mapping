@@ -243,7 +243,10 @@ class MappingConstraintsSuite extends munit.FunSuite {
       "}",
       "homer@example.com",
       "1 < 2",
-      "<b>safe</b>"
+      "<b>safe</b>",
+      """<p>Dear Team,
+        |\nThe drop down values for the SGM Tree when we want to "Add A Person" is not context-sensitive to SGM roles.
+        |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin
     ).foreach { v =>
         assert(HtmlSanitizer.isXssSafe(v))
       }
