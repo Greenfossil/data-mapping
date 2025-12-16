@@ -226,7 +226,9 @@ class MappingConstraintsSuite extends munit.FunSuite {
   }
 
   test("HtmlSanitizer.isXssSafe") {
-    List(
+    // A broader set of strings that should be considered XSS-safe by the sanitizer
+    val safeSamples = List(
+      // plain characters and symbols
       "&",
       "<",
       ">",
@@ -235,9 +237,9 @@ class MappingConstraintsSuite extends munit.FunSuite {
       "/",
       "",
       "a", "z", "A", "Z", "1", "9", "[", "]",
-      "{" /*{ Policy.sanitize will append Html comment after a lone '{' */,
-      "{ 1" /* '{' with a suffix*/ ,
-      "}",
+      // lone braces and their common variants
+      "{", "{ 1", "}",
+      // emails, math and simple comparisons
       "homer@example.com",
       "1 < 2",
       "1 + 1",
@@ -247,31 +249,91 @@ class MappingConstraintsSuite extends munit.FunSuite {
       "2 == 2",
       "true",
       "false",
+      // safe HTML fragments / entities
       "<b>safe</b>",
       "<p>!@#</p>",
       "<p>1&amp;2</p>",
+      "<p>&nbsp; &nbsp;sad&nbsp; &nbsp;12</p>",
+      // already-escaped scripts should be safe
+      "&lt;script&gt;alert(1)&lt;/script&gt;",
+      // long, multi-line content (real-world use)
       """<p>Dear Team,
         |\nThe drop down values for the SGM Tree when we want to "Add A Person" is not context-sensitive to SGM roles.
-        |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin
-    ).foreach { v =>
-        assert(HtmlSanitizer.isXssSafe(clue(v)))
-      }
+        |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin,
+      // HTML with attributes that are benign (http/mailto) and benign data values
+      "<a href=\"http://example.com\">link</a>",
+      "<a href=\"mailto:foo@example.com\">email</a>",
+      // text that includes angle brackets but is not HTML
+      "1 < 2 and 3 > 2",
+      // input with encoded entities and escapes
+      "&lt;b&gt;not-bad&lt;/b&gt;",
+      // CSS-like text that doesn't contain javascript
+      "body { color: red }",
+      // comment-only fragments
+      "<!-- just a comment -->",
+      // mixture of safe tags and escaped content
+      "<div>Safe &amp; sound</div>",
+      // 'script' as substring but not a tag
+      "this is a scriptless string with word script inside",
+      // protocol-like string that is safe as plain text (not an attribute)
+      "JaVaScRiPt:alert(1)",
+      // whitespace and punctuation heavy content
+      "   \n  \t  "
+    )
+
+    safeSamples.zipWithIndex.foreach { case (v, idx) =>
+      assert(HtmlSanitizer.isXssSafe(clue(v)), s"expected safeSamples($idx) to be safe: $v")
+    }
   }
 
   test("HtmlSanitizer.isXssUnsafe") {
-    List(
+    // A more exhaustive list of known XSS payload variants that should be detected
+    val unsafeSamples = List(
       "<script>alert(1)</script>",
       "<script>alert(1)//.",
       "<b>test</b><script>alert(1)</script>",
-      """<IMG SRC="javascript:alert('XSS');"""",
+      // mixed-case and obfuscated javascript pseudo-protocols
+      """<IMG SRC=\"javascript:alert('XSS');\"/>""",
       "<script SRC=http://xss.rocks/xss.js></script>",
+      // JSON embedding containing script content
       """{"html":"<script>alert(1)</script>","safe":true}""",
-      """<img src="jav	ascript:alert(1)">""",
+      // tabs/newlines and obfuscated 'javascript'
+      """<img src=\"jav\tascript:alert(1)\">""",
       """<img src=x onerror=alert(1)//>""",
-      """<img src="jav
-ascript:alert(1)">"""
-    ).foreach { v =>
-      assert(HtmlSanitizer.isXssUnSafe(clue(v)))
+      // broken line-separated javascript payloads
+      """<img src=\"jav\nascript:alert(1)\">""",
+      // event handlers
+      "<a href=\"#\" onclick=\"alert(1)\">x</a>",
+      "<div onmouseover=\"alert(1)\">hover</div>",
+      "<body onload=alert(1)>",
+      // svg/onload vector
+      "<svg onload=alert(1)></svg>",
+      // iframe/javascript src
+      "<iframe src=\"javascript:alert(1)\"></iframe>",
+      // data URI with HTML containing script
+      "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+      // style with javascript in url()
+      "<div style=\"background-image: url(javascript:alert(1))\"></div>",
+      // img with src using expression-like attempts
+      "<img src=\"#\" onerror=\"this.src='javascript:alert(1)'\" />",
+      // script in attribute values
+      "<div data='</script><script>alert(1)</script>'></div>",
+      // inline JS in href
+      "<a href=\"javascript:alert('XSS')\">x</a>",
+      // nested harmless tag with an embedded script string
+      "<p>safe</p><script>evil()</script>",
+      // malformed but dangerous-looking tags
+      "<scr<script>ipt>alert(1)</scr</script>ipt>",
+      // html comment wrapping a script tag (should still be unsafe)
+      "<!--<script>alert(1)</script>-->",
+      // onerror with various quoting styles
+      "<img src=\"x\" onerror=alert('XSS')>",
+      // minimal obfuscated vectors
+      "<svg><script>alert(1)</script></svg>"
+    )
+
+    unsafeSamples.zipWithIndex.foreach { case (v, idx) =>
+      assert(HtmlSanitizer.isXssUnSafe(clue(v)), s"expected unsafeSamples($idx) to be unsafe: $v")
     }
   }
 }

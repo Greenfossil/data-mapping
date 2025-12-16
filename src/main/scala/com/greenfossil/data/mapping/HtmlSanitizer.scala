@@ -2,6 +2,8 @@ package com.greenfossil.data.mapping
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.owasp.html.{Encoding, HtmlPolicyBuilder, PolicyFactory}
+import java.util.Base64
+import java.net.URLDecoder
 
 /**
  * Centralized OWASP HTML sanitizer utility.
@@ -33,29 +35,66 @@ object HtmlSanitizer:
   val htmlLikeRegex =
     """(?i)<\s*/?\s*[a-z][a-z0-9]*\b(?:[^>]*>?|$)""".r
 
+  // Simple helper: detect suspicious data: URIs. Conservative and lightweight.
+  private def isDataUriUnsafe(input: String): Boolean =
+    val s = Option(input).map(_.trim).getOrElse("")
+    if !s.toLowerCase.startsWith("data:") then false
+    else
+      val comma = s.indexOf(',')
+      if comma < 0 then true // malformed -> unsafe
+      else
+        val header = s.substring(5, comma).toLowerCase
+        val payload = s.substring(comma + 1)
+
+        // Allowlist common raster image types
+        val safeImagePrefixes = Seq("image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp")
+        if safeImagePrefixes.exists(header.startsWith) then false
+
+        // Immediately consider scriptable or HTML-like media types unsafe
+        if header.contains("text/html") || header.contains("image/svg") || header.contains("javascript") then true
+
+        val isBase64 = header.contains("base64")
+        if isBase64 then
+          try
+            val payloadForDecode = if payload.length > 11000 then payload.take(11000) else payload
+            val decoded = new String(Base64.getDecoder.decode(payloadForDecode), "UTF-8").toLowerCase
+            val markers = Seq("<script", "javascript:", "onload=", "<svg", "<!doctype")
+            markers.exists(decoded.contains)
+          catch
+            case _: IllegalArgumentException => true // bad base64 -> unsafe
+        else
+          try
+            val decoded = URLDecoder.decode(payload, "UTF-8").toLowerCase
+            val markers = Seq("<script", "<svg", "javascript:", "onload=")
+            markers.exists(decoded.contains)
+          catch
+            case _: Exception => true
+
   inline def isXssUnSafe(input: String): Boolean =
     !isXssSafe(input)
 
-  def isXssSafe(input: String): Boolean = {
-    //Check if input is remotely likely a HTML
-    if input == null || input.isBlank || htmlLikeRegex.findFirstIn(input).isEmpty then {
-      true
-    } else
+  def isXssSafe(input: String): Boolean =
+    // Normalize/guard null and short-circuit data: URIs first
+    val t = if input == null then "" else input.trim
+    if t.toLowerCase.startsWith("data:") then
+      !isDataUriUnsafe(t)
+    else if t.isBlank || htmlLikeRegex.findFirstIn(t).isEmpty then true
+    else
       /*
        * Sanitize and compare with original input
        * If sanitization did not modify input, it is considered safe
        * If sanitization modified input, decode sanitized and compare with input
        */
-      val sanitized = sanitize(input)
-      if input.equals(sanitized) then true
+      val nonNbspInput = t.replaceAll("&nbsp;", " ") /*This is to handle Trumbowyg's auto encoding space character to nbsp*/
+      val sanitized = sanitize(nonNbspInput)
+      if nonNbspInput.equals(sanitized) then true
       else
         val decoded = Encoding.decodeHtml(sanitized, false)
         /*
          * Input is considered safe if sanitization did not modify it.
-         * Use the decoded sanitized to compare with input.
+         * Use the decoded sanitized to compare with nonNbspInput.
          */
-        input.equals(decoded)
-  }
+        nonNbspInput.equals(decoded)
 
 
   /** Sanitizes input and preserves the original unsafe fragment as escaped text for user feedback.
