@@ -218,6 +218,9 @@ class MappingConstraintsSuite extends munit.FunSuite {
 
     val field5 = nonEmptyText.name("f").bind("f" -> "1 < 2")
     assertEquals(field5.errors.size, 0)
+
+    val field6 = nonEmptyText.name("f").bind("f" -> "<p>! @ #</p>")
+    assertEquals(field6.errors.size, 0)
   }
 
   test("sanitize false positive") {
@@ -226,6 +229,7 @@ class MappingConstraintsSuite extends munit.FunSuite {
 
   test("HtmlSanitizer.isXssSafe") {
     List(
+      "<p>!@#</p>",
       "&",
       "<",
       ">",
