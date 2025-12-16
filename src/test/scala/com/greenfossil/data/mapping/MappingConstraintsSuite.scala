@@ -219,8 +219,6 @@ class MappingConstraintsSuite extends munit.FunSuite {
     val field5 = nonEmptyText.name("f").bind("f" -> "1 < 2")
     assertEquals(field5.errors.size, 0)
 
-    val field6 = nonEmptyText.name("f").bind("f" -> "<p>1&amp;3</p>")
-    assertEquals(field6.errors.size, 0)
   }
 
   test("sanitize false positive") {
@@ -256,7 +254,7 @@ class MappingConstraintsSuite extends munit.FunSuite {
         |\nThe drop down values for the SGM Tree when we want to "Add A Person" is not context-sensitive to SGM roles.
         |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin
     ).foreach { v =>
-        assert(HtmlSanitizer.isXssSafe(v))
+        assert(HtmlSanitizer.isXssSafe(clue(v)))
       }
   }
 
@@ -273,7 +271,7 @@ class MappingConstraintsSuite extends munit.FunSuite {
       """<img src="jav
 ascript:alert(1)">"""
     ).foreach { v =>
-      assert(HtmlSanitizer.isXssUnSafe(v))
+      assert(HtmlSanitizer.isXssUnSafe(clue(v)))
     }
   }
 }

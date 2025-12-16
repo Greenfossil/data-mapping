@@ -41,14 +41,20 @@ object HtmlSanitizer:
     if input == null || input.isBlank || htmlLikeRegex.findFirstIn(input).isEmpty then {
       true
     } else
-      //Handle HtmlSantizer special treatment to '{' lone character
-      val sanitized = sanitize(input)
-      val decoded = Encoding.decodeHtml(sanitized, false)
       /*
-       * Input is considered safe if sanitization did not modify it.
-       * Use the decoded sanitized to compare with input.
+       * Sanitize and compare with original input
+       * If sanitization did not modify input, it is considered safe
+       * If sanitization modified input, decode sanitized and compare with input
        */
-      input.equals(decoded)
+      val sanitized = sanitize(input)
+      if input.equals(sanitized) then true
+      else
+        val decoded = Encoding.decodeHtml(sanitized, false)
+        /*
+         * Input is considered safe if sanitization did not modify it.
+         * Use the decoded sanitized to compare with input.
+         */
+        input.equals(decoded)
   }
 
 

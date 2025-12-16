@@ -212,9 +212,6 @@ trait MappingInlines:
       constraints = constraints ++ Seq(Constraints.xssConstraint()) /*XSS-Constraint must not be removed*/)
 
   inline def nonEmptyHtmlText: FieldMapping[String] =
-    nonEmptyHtmlText(_ => "")
-
-  inline def nonEmptyHtmlText(replacer: scala.util.matching.Regex.Match => String): FieldMapping[String] =
     text(identity, Seq(Constraints.nonEmpty))
 
   inline def email: Mapping[String] =
