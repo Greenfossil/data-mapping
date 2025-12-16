@@ -133,7 +133,7 @@ trait Constraints:
     Constraint[String]("constraint.xss") { o =>
       if o == null then Valid
       else if HtmlSanitizer.containsUnsafe(o) then
-        val ex = IllegalArgumentException(s"Potential XSS attack detected: ${HtmlSanitizer.escapeHtml(o)}")
+        val ex = IllegalArgumentException(s"Potential XSS attack detected: ${HtmlSanitizer.encodeUnsafeXss(o)}")
         mappingLogger.error(ex.getMessage, ex)
         Invalid(ValidationError(errorMessage))
       else Valid

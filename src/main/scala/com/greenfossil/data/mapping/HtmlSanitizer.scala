@@ -1,7 +1,7 @@
 package com.greenfossil.data.mapping
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.owasp.html.{HtmlPolicyBuilder, PolicyFactory}
+import org.owasp.html.{Encoding, HtmlPolicyBuilder, PolicyFactory}
 
 /**
  * Centralized OWASP HTML sanitizer utility.
@@ -33,18 +33,24 @@ object HtmlSanitizer:
   val htmlLikeRegex =
     """(?i)<\s*/?\s*[a-z][a-z0-9]*\b(?:[^>]*>?|$)""".r
 
-  inline def isXssSafe(input: String): Boolean = {
+  inline def isXssUnSafe(input: String): Boolean =
+    !isXssSafe(input)
+
+  def isXssSafe(input: String): Boolean = {
     //Check if input is remotely likely a HTML
     if input == null || input.isBlank || htmlLikeRegex.findFirstIn(input).isEmpty then {
       true
     } else
       //Handle HtmlSantizer special treatment to '{' lone character
-      if input.equals("{") then "{<!-- -->".equals(sanitize(input))
-       else input.equals(sanitize(input))
+      val sanitized = sanitize(input)
+      val decoded = Encoding.decodeHtml(sanitized, false)
+      /*
+       * Input is considered safe if sanitization did not modify it.
+       * Use the decoded sanitized to compare with input.
+       */
+      input.equals(decoded)
   }
 
-  inline def isXssUnSafe(input: String): Boolean =
-    !isXssSafe(input)
 
   /** Sanitizes input and preserves the original unsafe fragment as escaped text for user feedback.
    * Returns sanitized HTML with the original offending payload shown escaped in a wrapper.
@@ -57,20 +63,32 @@ object HtmlSanitizer:
     else
       // Keep JSON false-positive avoidance
       if containsUnsafe(input) then {
-        val sanitized = sanitize(input)
-        val escapedOriginal = escapeHtml(input)
-        s"""$sanitized<$wrapperTag class="$wrapperClass">[XSS Detected: $escapedOriginal]</$wrapperTag>"""
+        val encodedXss = encodeUnsafeXss(input)
+        s"""<$wrapperTag class="$wrapperClass">[XSS Detected: $encodedXss]</$wrapperTag>"""
       }
-       else input
+      else input
 
 
   // Small inline escape helper
+  @deprecated("Use encodeUnsafeXss instead")
   def escapeHtml(s: String): String =
     s.replace("&", "&amp;")
      .replace("<", "&lt;")
      .replace(">", "&gt;")
      .replace("\"", "&#34;")
      .replace("'", "&#39;")
+
+  /**
+   * Encodes untrusted input for safe display in HTML context.
+   * @param untrustedInput
+   * @return
+   */
+  def encodeUnsafeXss(untrustedInput: String): String =
+    if untrustedInput == null then null
+    else
+      val sb = new java.lang.StringBuilder()
+      Encoding.encodeRcdataOnto(untrustedInput,sb)
+      sb.toString
 
   private val jsonMapper = new ObjectMapper()
 

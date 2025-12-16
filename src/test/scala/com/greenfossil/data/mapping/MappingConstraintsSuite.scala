@@ -229,7 +229,6 @@ class MappingConstraintsSuite extends munit.FunSuite {
 
   test("HtmlSanitizer.isXssSafe") {
     List(
-      "<p>!@#</p>",
       "&",
       "<",
       ">",
@@ -243,7 +242,15 @@ class MappingConstraintsSuite extends munit.FunSuite {
       "}",
       "homer@example.com",
       "1 < 2",
+      "1 + 1",
+      "1 & 1",
+      "1 / 1",
+      "1\\1",
+      "2 == 2",
+      "true",
+      "false",
       "<b>safe</b>",
+      "<p>!@#</p>",
       """<p>Dear Team,
         |\nThe drop down values for the SGM Tree when we want to "Add A Person" is not context-sensitive to SGM roles.
         |It was once upon a time. Can help us to check? This is highlighted by user on 12 Nov.</p>""".stripMargin
@@ -256,7 +263,14 @@ class MappingConstraintsSuite extends munit.FunSuite {
     List(
       "<script>alert(1)</script>",
       "<script>alert(1)//.",
-      """<IMG SRC="javascript:alert('XSS');""""
+      "<b>test</b><script>alert(1)</script>",
+      """<IMG SRC="javascript:alert('XSS');"""",
+      "<script SRC=http://xss.rocks/xss.js></script>",
+      """{"html":"<script>alert(1)</script>","safe":true}""",
+      """<img src="jav	ascript:alert(1)">""",
+      """<img src=x onerror=alert(1)//>""",
+      """<img src="jav
+ascript:alert(1)">"""
     ).foreach { v =>
       assert(HtmlSanitizer.isXssUnSafe(v))
     }
