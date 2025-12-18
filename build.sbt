@@ -7,7 +7,7 @@ lazy val dataMapping = project
   .settings(
     name := "data-mapping",
     organization := "com.greenfossil",
-    version := "1.3.4-RC1",
+    version := "1.3.4",
 
     scalaVersion := scala3Version,
 
