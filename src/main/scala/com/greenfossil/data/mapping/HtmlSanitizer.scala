@@ -100,20 +100,35 @@ object HtmlSanitizer:
    * @return
    */
   def defaultHtmlNormalizer(input: String): String =
-    input
-      .replace("&nbsp;", "\u00A0")
-      .replaceAll("&amp;", "&")
-      .replaceAll("&lt;", "<")
-      .replaceAll("&gt;", ">")
-      .replaceAll("&#43;", "+")
-      .replaceAll("<br>", "<br />")
-      // Normalize any <img>, <img/>, or <img .../> to "<img... />" (single space + slash)
-      .replaceAll("(?i)<img\\b([^>]*?)\\s*/?\\s*>", "<img$1 />")
-      //Remove the white spaces before ':' for the style attributes
-      .replaceAll("(?i)\\s*:\\s*", ":")
-      .replaceAll("\\s*;\\s*", ";")
-      // remove a trailing semicolon just before the closing quote of a style attribute
-      .replaceAll("(?i)(style\\s*=\\s*\"[^\"]*?)\\s*;\\s*\"", "$1\"")
+    if input == null then null
+    else
+      // basic entity and img normalizations first
+      val base =
+        input
+          .replace("&nbsp;", "\u00A0")
+          .replaceAll("&amp;", "&")
+          .replaceAll("&lt;", "<")
+          .replaceAll("&gt;", ">")
+          .replaceAll("&#43;", "+")
+          .replaceAll("<br>", "<br />")
+          .replaceAll("(?i)<img\\b([^>]*?)\\s*/?\\s*>", "<img$1 />")
+
+      // Only normalize whitespace *after* ':' inside style attributes.
+      val stylePattern = java.util.regex.Pattern.compile("(?i)(style\\s*=\\s*\")([^\"]*?)\"", java.util.regex.Pattern.CASE_INSENSITIVE)
+      val m = stylePattern.matcher(base)
+      val sb = new java.lang.StringBuffer()
+      while m.find() do
+        val prefix = m.group(1) // e.g. style="
+        val body = m.group(2)
+          // remove white space after ':' only
+          .replaceAll(":(\\s+)", ":")
+          // remove white space after ';'
+          .replaceAll(";\\s+", ";")
+          // remove a trailing semicolon just before the closing quote
+          .replaceAll(";\\s*$", "")
+        m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(prefix + body + "\""))
+      m.appendTail(sb)
+      sb.toString
 
   /**
    *

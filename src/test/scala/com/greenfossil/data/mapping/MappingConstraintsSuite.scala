@@ -281,7 +281,8 @@ class MappingConstraintsSuite extends munit.FunSuite {
       "JaVaScRiPt:alert(1)",
       // whitespace and punctuation heavy content
       "   \n  \t  ",
-      """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>""".stripMargin
+      """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>""".stripMargin,
+      """<p>: " ;</p>"""
     )
 
     safeSamples.zipWithIndex.foreach { case (v, idx) =>
@@ -361,6 +362,13 @@ class MappingConstraintsSuite extends munit.FunSuite {
 
   test("img false positive prevention") {
     val origInput =  """<img src="http://example.com/image.jpg" alt="test" />"""
+    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
+    val decoded = Encoding.decodeHtml(sanitized, false)
+    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
+  }
+
+  test("img false positive ") {
+    val origInput = """<p>: " ;</p>"""
     val sanitized = HtmlSanitizer.policy.sanitize(origInput)
     val decoded = Encoding.decodeHtml(sanitized, false)
     assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
