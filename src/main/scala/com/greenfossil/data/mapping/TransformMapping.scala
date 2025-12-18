@@ -119,6 +119,18 @@ case class TransformMapping[A, B](tpe: String,
 
   override def noOfFields: Int = aMapping.noOfFields
 
+  /**
+   *
+   * @return
+   */
+  override def fieldNames: Seq[String] = aMapping.fieldNames
+
+  /**
+   *
+   * @return - aMapping field names
+   */
+  override def fieldBindingNames: Seq[String] = aMapping.fieldBindingNames
+
   override def boundValueIndexes: Seq[Int] =
     aMapping.boundValueIndexes
 

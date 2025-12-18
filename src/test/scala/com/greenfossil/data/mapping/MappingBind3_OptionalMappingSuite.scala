@@ -31,6 +31,8 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     val form: Mapping[Option[Long]] = optional(longNumber).name("id")
 
+    assertEquals(form.fieldBindingNames, Seq("id"))
+
     val boundMissingValueForm = form.bind(Json.obj())
     assertEquals(boundMissingValueForm.typedValueOpt, Some(None))
 

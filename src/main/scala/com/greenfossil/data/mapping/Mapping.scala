@@ -99,6 +99,22 @@ trait Mapping[A] extends ConstraintVerifier[A]:
 
   /**
    *
+   * @return
+   */
+  def fieldNames: Seq[String]
+
+  /**
+   *
+   * @return - the field names of the Mapping
+   *         For FieldMapping - Seq(name)
+   *         ProductMapping - Seq of field names
+   *         SeqMapping - Seq(name)
+   *         TransformMapping - depends on the underlying Mapping[A]
+   */
+  def fieldBindingNames: Seq[String]
+
+  /**
+   *
    * @return - number of value bound to Mapping
    *         For FieldMapping - min 0, max 1
    *         ProductMapping - min 0, max 1
@@ -117,8 +133,6 @@ trait Mapping[A] extends ConstraintVerifier[A]:
 
   override def toString: String =
     s"name:$name type:$tpe value:$typedValueOpt"
-
-  def showFields: String =  ??? //TODO
 
   private def findDotPathMapping(rootMapping: Mapping[?], key: String): Option[Mapping[?]] =
     val pathParts = key.split("\\.")

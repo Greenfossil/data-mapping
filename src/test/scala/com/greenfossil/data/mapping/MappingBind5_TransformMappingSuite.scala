@@ -29,6 +29,8 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
       .transform[Int](_ * 2, _ / 2)
       .verifying("X must be 8", x => x == 8)
 
+    assertEquals(f1.fieldBindingNames, Seq("f1"))
+
     //Bind Missing Value
     val boundMissingValueField = f1.bind()
     assertEquals(boundMissingValueField.typedValueOpt, None)
@@ -123,6 +125,8 @@ class MappingBind5_TransformMappingSuite extends munit.FunSuite {
         l => Option(l.mkString(", ")).filter(_.nonEmpty)
       )
     )
+
+    assertEquals(basicFilterForm.fieldBindingNames, Seq("query", "filters"))
 
     val boundForm = basicFilterForm.bind("query" -> "jake")
 

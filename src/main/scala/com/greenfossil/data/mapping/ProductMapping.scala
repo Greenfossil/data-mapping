@@ -206,6 +206,24 @@ case class ProductMapping[A](tpe: String,
   override def noOfFields: Int =
     mappings.toList.size
 
+  /**
+   *
+   * @return
+   */
+  override def fieldNames: Seq[String] =
+    mappings.toList.collect { case f: Mapping[?] => f.name }
+
+  /**
+   *
+   * @return - the field names of the Mapping
+   * For FieldMapping - Seq(name)
+   * ProductMapping - Seq of field names
+   * SeqMapping - Seq(name)
+   * TransformMapping - depends on the underlying Mapping[A]
+   */
+  override def fieldBindingNames: Seq[String] =
+    mappings.toList.collect { case f: Mapping[?] => f.bindingName }
+
   override def boundValueIndexes: Seq[Int] =
     if typedValueOpt.isEmpty then Nil else Seq(0)
 

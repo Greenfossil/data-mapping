@@ -177,3 +177,15 @@ case class SeqMapping[A](tpe: String,
   override def filterErrors(predicate: MappingError => Boolean): Mapping[Seq[A]] = copy(errors = errors.filter(predicate))
 
   override def noOfFields: Int = elemField.noOfFields
+
+  /**
+   *
+   * @return
+   */
+  override def fieldNames: Seq[String] = elemField.fieldNames
+
+  /**
+   *
+   * @return - element field names
+   */
+  override def fieldBindingNames: Seq[String] = elemField.fieldBindingNames

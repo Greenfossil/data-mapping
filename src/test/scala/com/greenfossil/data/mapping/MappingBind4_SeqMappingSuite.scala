@@ -21,6 +21,7 @@ class MappingBind4_SeqMappingSuite extends munit.FunSuite {
   
   test("Seq[Int]") {
     val seqIntField = seq[Int].name("i")
+    assertEquals(seqIntField.fieldBindingNames, Seq("i"))
     assertEquals(seqIntField.boundValueIndexes, Nil)
     val boundField = seqIntField.bind("i[1]" -> "1", "i[2]" -> "2", "i[3]" -> "3")
     assertEquals(boundField.typedValueOpt, Some(Seq(1, 2, 3)))

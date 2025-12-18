@@ -28,6 +28,8 @@ class MappingCaseClassBindNameSuite extends munit.FunSuite {
         "age"  -> number.bindName("My-Age").verifying("Age must be 42", age => age == 42)
       )
 
+    assertEquals(userFormConstraints.fieldNames, Seq("name", "age"))
+    assertEquals(userFormConstraints.fieldBindingNames, Seq("My-Name", "My-Age"))
     val boundForm = userFormConstraints.bind("My-Name" -> "1", "My-Age" -> "10")
     assertEquals(boundForm.hasErrors, true)
     assertNoDiff(boundForm.errors.head.messages.head, "Age must be 42")

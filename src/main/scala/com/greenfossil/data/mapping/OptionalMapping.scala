@@ -118,6 +118,24 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
 
   /**
    *
+   * @return
+   */
+  override def fieldNames: Seq[String] =
+    mapping.fieldNames
+
+  /**
+   *
+   * @return - the field names of the Mapping
+   * For FieldMapping - Seq(name)
+   * ProductMapping - Seq of fieldNames which is
+   * SeqMapping - Seq(name)
+   * TransformMapping - depends on the underlying Mapping[A]
+   */
+  override def fieldBindingNames: Seq[String] =
+    mapping.fieldBindingNames
+
+  /**
+   *
    * @return - number of value bound to Mapping
    *         For FieldMapping - min 0, max 1
    *         ProductMapping - min 0, max 1

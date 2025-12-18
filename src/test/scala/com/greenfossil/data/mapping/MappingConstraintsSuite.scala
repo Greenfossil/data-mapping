@@ -16,9 +16,11 @@
 
 package com.greenfossil.data.mapping
 
+import org.owasp.html.Encoding
+
 class MappingConstraintsSuite extends munit.FunSuite {
   import Mapping.*
-  
+
   /*
    * For implementing constraints - use play.api.data.Forms for help. Need to use Constraints class
    */
@@ -225,7 +227,7 @@ class MappingConstraintsSuite extends munit.FunSuite {
     assertNoDiff(HtmlSanitizer.sanitize("1 < 2"), "1 &lt; 2")
   }
 
-  test("HtmlSanitizer.isXssSafe".only) {
+  test("HtmlSanitizer.isXssSafe") {
     // A broader set of strings that should be considered XSS-safe by the sanitizer
     val safeSamples = List(
       // plain characters and symbols
@@ -312,7 +314,7 @@ class MappingConstraintsSuite extends munit.FunSuite {
       // iframe/javascript src
       "<iframe src=\"javascript:alert(1)\"></iframe>",
       // data URI with HTML containing script
-      "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+      """<iframe src="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=="></iframe>""",
       // style with javascript in url()
       "<div style=\"background-image: url(javascript:alert(1))\"></div>",
       // img with src using expression-like attempts
@@ -337,4 +339,31 @@ class MappingConstraintsSuite extends munit.FunSuite {
       assert(HtmlSanitizer.isXssUnSafe(clue(v)), s"expected unsafeSamples($idx) to be unsafe: $v")
     }
   }
+
+  test("img data: src unchanged after sanitization") {
+    val origInput =
+      """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>"""
+
+    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
+    val decoded = Encoding.decodeHtml(sanitized, false)
+
+    // The raw sanitized output may be canonicalized (e.g. serializer may convert <img> to <img />),
+    // so compare normalized decoded sanitized output to the original input which preserves the user's expectation.
+    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
+  }
+
+  test("nbsp false positive prevention") {
+    val origInput =  "<p>&nbsp; &nbsp;sad&nbsp; &nbsp;12</p>"
+    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
+    val decoded = Encoding.decodeHtml(sanitized, false)
+    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
+  }
+
+  test("img false positive prevention") {
+    val origInput =  """<img src="http://example.com/image.jpg" alt="test" />"""
+    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
+    val decoded = Encoding.decodeHtml(sanitized, false)
+    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
+  }
+
 }

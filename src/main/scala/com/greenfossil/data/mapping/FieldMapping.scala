@@ -141,6 +141,20 @@ case class FieldMapping[A](tpe: String,
 
   override val noOfFields: Int = 1
 
+  /**
+   *
+   * @return - the field's bindingName in a Seq
+   */
+  override def fieldBindingNames: Seq[String] =
+    Seq(bindingName)
+
+  /**
+   *
+   * @return
+   */
+  override def fieldNames: Seq[String] =
+    Seq(name)
+
   override def boundValueIndexes: Seq[Int] =
     if typedValueOpt.isEmpty then Nil else Seq(0)
 

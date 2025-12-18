@@ -35,6 +35,8 @@ class MappingBind2_ProductMappingJson_HtmlSuite extends munit.FunSuite {
       )
     )
 
+    assertEquals(form.fieldBindingNames, Seq("id", "address"))
+
     val boundVEmptyValueForm = form.bind(Json.obj("id" -> "", "address" -> ""))
     assertEquals(boundVEmptyValueForm.typedValueOpt, None)
 

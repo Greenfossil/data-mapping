@@ -1,11 +1,8 @@
 package com.greenfossil.data.mapping
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.owasp.html.{Encoding, HtmlPolicyBuilder, PolicyFactory, AttributePolicy}
+import org.owasp.html.{AttributePolicy, Encoding, HtmlPolicyBuilder}
 import org.slf4j.LoggerFactory
-
-import java.util.Base64
-import java.net.URLDecoder
 
 /**
  * Centralized OWASP HTML sanitizer utility.
@@ -16,35 +13,71 @@ object HtmlSanitizer:
 
   private val htmlSanitizerLogger = LoggerFactory.getLogger("data-mapping.HtmlSanitizer")
 
-  val preserveStylePolicy: AttributePolicy = (elementName, attributeName, value) => value
-
-  val base64ImagePolicy: AttributePolicy = (elementName, attributeName, value) => {
-    def foo(elementName: String, attributeName: String, value: String) = {
-      if value == null then null
+  val aHrefPolicy: AttributePolicy =
+    (elementName: String, attributeName: String, value: String) => {
+      if (value == null) null
       else {
-        // HTTP/HTTPS images
-        if value.matches("^https?://.+\\.(png|jpe?g|gif|webp)$") ||
-          value.matches("^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$") then value
-        else null
+        val v = value.trim
+        // reject control chars/newlines
+        if v.exists(ch => ch <= '\u001f' || ch == '\u007f') || v.contains('\n') || v.contains('\r') then null
+        else
+          try {
+            val uri = new java.net.URI(v)
+            Option(uri.getScheme).map(_.toLowerCase) match {
+              case Some("http"|"https"|"mailto") => v
+              case Some("data") =>
+                // allow only image data URIs with base64 payload
+                if (v.matches("^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$")) v else null
+              case None =>
+                // only allow site-relative paths
+                if (v.startsWith("/")) v else null
+              case _ => null // block javascript:, vbscript:, data:text/html, etc.
+            }
+          } catch {
+            case _: Exception => null
+          }
       }
     }
 
-    foo(elementName, attributeName, value)
-  }
+  val imgSrcPolicy: AttributePolicy =
+    (elementName: String, attributeName: String, value: String) => {
+      if value == null then null
+      else {
+        val v = value.trim
+        // reject control chars/newlines
+        if v.exists(ch => ch <= '\u001f' || ch == '\u007f') || v.contains('\n') || v.contains('\r') then null
+        else
+          try {
+            val uri = new java.net.URI(v)
+            Option(uri.getScheme).map(_.toLowerCase) match {
+              case Some("http"|"https") =>
+                // require host and a path that ends with an allowed image extension
+                val hasHost = Option(uri.getHost).nonEmpty
+                val path = Option(uri.getPath).getOrElse("")
+                if hasHost && path.matches("(?i).+\\.(png|jpe?g|gif|webp)$") then v else null
+              case Some("data") =>
+                // allow only image data URIs with base64 payload
+                if (v.matches("^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$")) v else null
+              case _ => null
+            }
+          } catch {
+            case _: Exception => null
+          }
+      }
+    }
 
-  private val policy =
+  val policy =
     new HtmlPolicyBuilder()
+      .allowUrlProtocols("http", "https", "mailto", "data")
       .allowElements(
         "a", "b", "i", "u", "strong", "em", "p", "ul", "ol", "li", "br",
         "div", "span", "img", "pre", "code", "blockquote", "table", "thead",
         "tbody", "tr", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"
       )
-      .allowAttributes("href").onElements("a")
+      .allowAttributes("href").matching(aHrefPolicy).onElements("a")
+      .allowAttributes("alt", "title", "width", "height").onElements("img")
       .allowAttributes("style").globally()
-      .allowAttributes("src", "alt", "title", "style", "width", "height").onElements("img")
-      .allowUrlProtocols("http", "https", "mailto", "data")
-      .allowAttributes("src").matching(base64ImagePolicy).onElements("img")
-      .allowAttributes("style").matching(preserveStylePolicy).onElements("img")
+      .allowAttributes("src").matching(imgSrcPolicy).onElements("img")
       // Do not allow any 'on*' event attributes or script-like protocols
       .toFactory()
 
@@ -58,86 +91,58 @@ object HtmlSanitizer:
   val htmlLikeRegex =
     """(?i)<\s*/?\s*[a-z][a-z0-9]*\b(?:[^>]*>?|$)""".r
 
-  // Simple helper: detect suspicious data: URIs. Conservative and lightweight.
-  private def isDataUriUnsafe(input: String): Boolean =
-    val s = Option(input).map(_.trim).getOrElse("")
-    if !s.toLowerCase.startsWith("data:") then false
-    else
-      val comma = s.indexOf(',')
-      if comma < 0 then true // malformed -> unsafe
-      else
-        val header = s.substring(5, comma).toLowerCase
-        val payload = s.substring(comma + 1)
-
-        // Allowlist common raster image types
-        val safeImagePrefixes = Seq("image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp")
-        if safeImagePrefixes.exists(header.startsWith) then false
-
-        // Immediately consider scriptable or HTML-like media types unsafe
-        if header.contains("text/html") || header.contains("image/svg") || header.contains("javascript") then true
-
-        val isBase64 = header.contains("base64")
-        if isBase64 then
-          try
-            val payloadForDecode = if payload.length > 11000 then payload.take(11000) else payload
-            val decoded = new String(Base64.getDecoder.decode(payloadForDecode), "UTF-8").toLowerCase
-            val markers = Seq("<script", "javascript:", "onload=", "<svg", "<!doctype")
-            markers.exists(decoded.contains)
-          catch
-            case _: IllegalArgumentException => true // bad base64 -> unsafe
-        else
-          try
-            val decoded = URLDecoder.decode(payload, "UTF-8").toLowerCase
-            val markers = Seq("<script", "<svg", "javascript:", "onload=")
-            markers.exists(decoded.contains)
-          catch
-            case _: Exception => true
-
-  inline def isXssUnSafe(input: String): Boolean =
-    !isXssSafe(input)
-
-  def defaultHtmlNormalizer(input: String): String =
-    input
-        .replaceAll("&nbsp;", " ")
-        .replaceAll("&amp;", "&")
-        .replaceAll("&lt;", "<")
-        .replaceAll("&gt;", ">")
-        .replaceAll("&#43;", "+")
-        .replaceAll("<br>", "<br />")
+  inline def isXssUnSafe(input: String): Boolean = !isXssSafe(input)
 
   /**
    *
+   * Default HTML normalizer function to be used in isXssSafe comparisons.
    * @param input
+   * @return
+   */
+  def defaultHtmlNormalizer(input: String): String =
+    input
+      .replace("&nbsp;", "\u00A0")
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&#43;", "+")
+      .replaceAll("<br>", "<br />")
+      // Normalize any <img>, <img/>, or <img .../> to "<img... />" (single space + slash)
+      .replaceAll("(?i)<img\\b([^>]*?)\\s*/?\\s*>", "<img$1 />")
+      //Remove the white spaces before ':' for the style attributes
+      .replaceAll("(?i)\\s*:\\s*", ":")
+      .replaceAll("\\s*;\\s*", ";")
+      // remove a trailing semicolon just before the closing quote of a style attribute
+      .replaceAll("(?i)(style\\s*=\\s*\"[^\"]*?)\\s*;\\s*\"", "$1\"")
+
+  /**
+   *
+   * @param origInput
    * @param normalizerFn
    * @return
    */
-  def isXssSafe(input: String, normalizerFn: String => String = defaultHtmlNormalizer): Boolean =
+  def isXssSafe(origInput: String, normalizerFn: String => String = defaultHtmlNormalizer): Boolean =
     // Normalize/guard null and short-circuit data: URIs first
-    val t = if input == null then "" else input.trim
-    if t.toLowerCase.startsWith("data:") then
-      !isDataUriUnsafe(t)
-    else if t.isBlank || htmlLikeRegex.findFirstIn(t).isEmpty then true
+    val text = if origInput == null then "" else origInput.trim
+    if text.isBlank || htmlLikeRegex.findFirstIn(text).isEmpty then true
     else
       /*
        * Sanitize and compare with original input
        * If sanitization did not modify input, it is considered safe
        * If sanitization modified input, decode sanitized and compare with input
        */
-      val normalizedText = normalizerFn(t) /*Function to normalize input like auto encoding space character to nbsp or correcting <b> to <b />*/
-      val sanitized = sanitize(normalizedText)
-      if normalizedText.equals(sanitized) then true
+      val sanitized = sanitize(text)
+      val normalizedOrigInput = normalizerFn(origInput)
+      if normalizedOrigInput.equals(sanitized) then true
       else
         val decoded = Encoding.decodeHtml(sanitized, false)
         /*
          * Input is considered safe if sanitization did not modify it.
          * Use the decoded sanitized to compare with nonNbspInput.
          */
-        val isSafe = normalizedText.equals(decoded)
+        val isSafe = normalizedOrigInput.equals(decoded)
         if !isSafe then
-          htmlSanitizerLogger.warn(s"XssNotSafe-input:[$input]")
-          htmlSanitizerLogger.warn(s"XssNotSafe-sanitized:[$sanitized]")
-          htmlSanitizerLogger.warn(s"XssNotSafe-normalizedText:[$normalizedText]")
-          htmlSanitizerLogger.warn(s"XssNotSafe-decoded:[$decoded]")
+          htmlSanitizerLogger.warn(s"XssNotSafe\ninput:[$origInput]\nsanitized:[$sanitized]\nnormalized:[$normalizedOrigInput]\ndecoded:[$decoded]")
         isSafe
 
 

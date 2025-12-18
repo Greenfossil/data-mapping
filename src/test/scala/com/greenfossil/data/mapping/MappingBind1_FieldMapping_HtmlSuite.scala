@@ -196,4 +196,10 @@ class MappingBind1_FieldMapping_HtmlSuite extends munit.FunSuite {
     assertEquals(field.bind("value" -> text2).typedValueOpt, Option(text2))
   }
 
+  test("Bind with a different name") {
+    val field = htmlText.name("field").bindName("differentField")
+    assertEquals(field.fieldNames, Seq("field"))
+    assertEquals(field.fieldBindingNames, Seq("differentField"))
+  }
+
 }
