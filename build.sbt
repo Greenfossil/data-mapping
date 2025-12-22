@@ -15,6 +15,7 @@ lazy val dataMapping = project
       "com.greenfossil" %% "commons-json" % "1.3.2",
       "com.typesafe" % "config" % "1.4.3",
       "org.slf4j" % "slf4j-api" % "2.0.17",
+      "org.jsoup" % "jsoup" % "1.21.2",
       "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20240325.1",
       "ch.qos.logback" % "logback-classic" % "1.5.22" % Test,
       "org.scalameta" %% "munit" % "1.2.1" % Test

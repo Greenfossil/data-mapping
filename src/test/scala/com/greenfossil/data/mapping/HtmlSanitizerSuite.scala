@@ -287,3 +287,11 @@ ascript:alert(1)&#34;&gt;]</span>""")
     assert(result.contains("&lt;script&gt;alert"))
   }
 
+  test("HtmlSanitizer.sanitizeWithFeedback - with comment out") {
+    val largePayload = "<script>" + "alert(1);//"
+    val result = HtmlSanitizer.sanitizeWithFeedback(largePayload)
+    assert(result.contains("XSS Detected"))
+    assert(result.contains("&lt;script&gt;alert"))
+  }
+
+

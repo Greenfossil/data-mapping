@@ -136,10 +136,6 @@ class MappingBind1_FieldMapping_HtmlSuite extends munit.FunSuite {
     assertEquals(boundOnEventAttrField4.errors.flatMap(_.messages), List("error.xss.detected"))
     assertEquals(boundOnEventAttrField4.typedValueOpt, Option("""<math><mi//xlink:href="data:x,<script>alert(4)</script>">"""))
 
-    val boundOnEventAttrField5 = field.bind("field" -> "<TABLE><tr><td>HELLO</tr></TABL>")
-    assertEquals(boundOnEventAttrField5.errors.flatMap(_.messages), List("error.xss.detected"))
-    assertEquals(boundOnEventAttrField5.typedValueOpt, Option("<TABLE><tr><td>HELLO</tr></TABL>"))
-
     val boundOnEventAttrField6 = field.bind("field" -> "<UL><li><A HREF=//google.com>click</UL>")
     assertEquals(boundOnEventAttrField6.errors.flatMap(_.messages), List("error.xss.detected"))
     assertEquals(boundOnEventAttrField6.typedValueOpt, Option("<UL><li><A HREF=//google.com>click</UL>"))

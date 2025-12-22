@@ -1,8 +1,12 @@
 package com.greenfossil.data.mapping
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.jsoup.Jsoup
+import org.jsoup.safety.Safelist
 import org.owasp.html.{AttributePolicy, Encoding, HtmlPolicyBuilder}
 import org.slf4j.LoggerFactory
+
+import scala.jdk.CollectionConverters.*
 
 /**
  * Centralized OWASP HTML sanitizer utility.
@@ -81,7 +85,8 @@ object HtmlSanitizer:
       // Do not allow any 'on*' event attributes or script-like protocols
       .toFactory()
 
-  def sanitize(input: String): String =
+  @deprecated("use sanitize")
+  def sanitize2(input: String): String =
     if input == null then null
     else policy.sanitize(input)
 
@@ -130,13 +135,119 @@ object HtmlSanitizer:
       m.appendTail(sb)
       sb.toString
 
+
+  // Allowed image MIME types for data: URLs
+  private val allowedDataImages = Seq(
+    "data:image/png",
+    "data:image/jpeg",
+    "data:image/jpg",
+    "data:image/gif",
+    "data:image/webp"
+  )
+
+  private val safelist: Safelist = Safelist.relaxed()
+    .addTags(
+      "font", "span", "sub", "sup", "u", "s", "strike",
+      "thead", "th", "img"
+    )
+    .addAttributes("img", "align", "alt", "height", "src", "title", "width", "style")
+    .addProtocols("img", "src", "http", "https", "data")
+    .removeTags("script", "iframe", "object", "embed", "svg")
+    .addAttributes(":all", "style", "class")
+    .addAttributes("font", "color", "face", "size")
+    .addAttributes("th", "colspan", "rowspan")
+    .addAttributes("a", "href", "target")
+
+  private val htmlTagPattern = "(?is)<[^>]+>".r
+  private val obfuscatedEventHandlerPattern = "(?i)\\bon[a-z]{2,20}[^=<>]{0,100}=".r
+  private val dangerousProtocols = "(?i)(javascript|vbscript|data:text|file):".r
+
+  def containsMaliciousPatterns(input: String): Boolean = {
+    // Scan only inside HTML tags
+    val tags = htmlTagPattern.findAllIn(input)
+    val hasObfuscatedEvent = tags.exists: tag =>
+      obfuscatedEventHandlerPattern.findFirstIn(tag).nonEmpty
+    hasObfuscatedEvent || dangerousProtocols.findFirstIn(input).nonEmpty
+  }
+
+  /** Clean HTML and remove unsafe data: URLs */
+  def sanitize(input: String): String = {
+    val cleaned = Jsoup.clean(input, safelist)
+    val doc = Jsoup.parseBodyFragment(cleaned)
+    doc.outputSettings().prettyPrint(false)
+
+    // Remove unsafe data:image URLs
+    doc.select("img[src]").asScala.foreach { img =>
+      val src = img.attr("src").toLowerCase.trim
+
+      val isSafeData = src.startsWith("data:") && allowedDataImages.exists(src.startsWith)
+      val isSafeHttp = src.startsWith("http://") || src.startsWith("https://")
+
+      // Remove if not safe
+      if (!isSafeData && !isSafeHttp) {
+        img.remove()
+      }
+    }
+    // Remove unsafe styles
+    doc.select("*[style]").forEach { el =>
+      val style = el.attr("style").toLowerCase
+
+      if (
+        style.contains("javascript:") ||
+          style.contains("expression(") ||
+          style.contains("url(") && style.contains("javascript")
+      ) {
+        el.removeAttr("style")
+      }
+    }
+
+    doc.body().html()
+  }
+
+
+  /** Detect XSS safely */
+  def isXssSafe(input: String): Boolean = {
+    if input.isBlank || input.isEmpty || htmlLikeRegex.findFirstIn(input).isEmpty then true
+    else if containsMaliciousPatterns(input) then
+      //because Jsoup correct malform tags. any malform xss tags needs to be checked here
+      htmlSanitizerLogger.warn(s"Input contains containsMaliciousPatterns: [$input]")
+      false
+    else
+      val cleaned = sanitize(input) // this will clean and remove any tags not conforming to the policy
+      val originalDoc = Jsoup.parseBodyFragment(input)
+      val cleanedDoc = Jsoup.parseBodyFragment(cleaned)
+
+      // Check for any removed dangerous tags
+      val unsafeTags = Seq(
+        "script", "iframe", "object", "embed", "link", "style", "svg"
+      )
+
+      val removedTagDetected = originalDoc.select(unsafeTags.mkString(",")).asScala.nonEmpty &&
+        originalDoc.select(unsafeTags.mkString(",")).asScala.exists(tag => !safelist.isSafeTag(tag.tagName()))
+
+      // Check for any removed event attributes
+      val unsafeAttrs = originalDoc.select("*").asScala.exists { el =>
+        el.attributes().asScala.exists(attr => attr.getKey.toLowerCase.startsWith("on"))
+      }
+
+
+      val isEqual = originalDoc.html().equals(cleanedDoc.html())
+      val isSafe = isEqual && !(removedTagDetected || unsafeAttrs)
+      if !isSafe then
+        htmlSanitizerLogger.warn(s"XssNotSafe\ninput:[$input]\noriginalDoc:[$originalDoc]\ncleanedDoc:[$cleanedDoc]")
+        htmlSanitizerLogger.warn(s"XssNotSafe\nisEqual:[$isEqual]\nisSafe:[$isSafe]\nremovedTagDetected:[$removedTagDetected]\nunsafeAttrs:[$unsafeAttrs]")
+        isSafe
+      else isSafe
+  }
+
   /**
    *
-   * @param origInput
+   * @param origInputX
    * @param normalizerFn
    * @return
    */
-  def isXssSafe(origInput: String, normalizerFn: String => String = defaultHtmlNormalizer): Boolean =
+  @deprecated("use isXssSafe")
+  def isXssSafe2(origInput: String, normalizerFn: String => String = defaultHtmlNormalizer): Boolean =
     // Normalize/guard null and short-circuit data: URIs first
     val text = if origInput == null then "" else origInput.trim
     if text.isBlank || htmlLikeRegex.findFirstIn(text).isEmpty then true
@@ -146,7 +257,7 @@ object HtmlSanitizer:
        * If sanitization did not modify input, it is considered safe
        * If sanitization modified input, decode sanitized and compare with input
        */
-      val sanitized = sanitize(text)
+      val sanitized = sanitize2(text)
       val normalizedOrigInput = normalizerFn(origInput)
       if normalizedOrigInput.equals(sanitized) then true
       else

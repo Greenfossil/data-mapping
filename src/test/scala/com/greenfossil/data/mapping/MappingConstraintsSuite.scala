@@ -282,7 +282,8 @@ class MappingConstraintsSuite extends munit.FunSuite {
       // whitespace and punctuation heavy content
       "   \n  \t  ",
       """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>""".stripMargin,
-      """<p>: " ;</p>"""
+      """<p>: " ;</p>""",
+      """<p>Estimated man days: 5 man days</p><ul><li>Enhance fast booking page (1man day)</li><ul><li>Allow smoother booking through mobile</li><li>Press and drag timeslots</li></ul><li>Allow normal members to book through fast booking (1 man day)</li><li>Recurring ordinary booking (1.5 man days)</li><li>Testing &amp; Discussion (1.5 man days)</li></ul>"""
     )
 
     safeSamples.zipWithIndex.foreach { case (v, idx) =>
