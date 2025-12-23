@@ -70,7 +70,8 @@ object HtmlSanitizer:
       }
     }
 
-  val policy =
+  @deprecated("to be removed, use sanitize instead")
+  private val policy =
     new HtmlPolicyBuilder()
       .allowUrlProtocols("http", "https", "mailto", "data")
       .allowElements(

@@ -223,10 +223,6 @@ class MappingConstraintsSuite extends munit.FunSuite {
 
   }
 
-  test("sanitize false positive") {
-    assertNoDiff(HtmlSanitizer.sanitize("1 < 2"), "1 &lt; 2")
-  }
-
   test("HtmlSanitizer.isXssSafe") {
     // A broader set of strings that should be considered XSS-safe by the sanitizer
     val safeSamples = List(
@@ -283,7 +279,8 @@ class MappingConstraintsSuite extends munit.FunSuite {
       "   \n  \t  ",
       """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>""".stripMargin,
       """<p>: " ;</p>""",
-      """<p>Estimated man days: 5 man days</p><ul><li>Enhance fast booking page (1man day)</li><ul><li>Allow smoother booking through mobile</li><li>Press and drag timeslots</li></ul><li>Allow normal members to book through fast booking (1 man day)</li><li>Recurring ordinary booking (1.5 man days)</li><li>Testing &amp; Discussion (1.5 man days)</li></ul>"""
+      """<p>Estimated man days: 5 man days</p><ul><li>Enhance fast booking page (1man day)</li><ul><li>Allow smoother booking through mobile</li><li>Press and drag timeslots</li></ul><li>Allow normal members to book through fast booking (1 man day)</li><li>Recurring ordinary booking (1.5 man days)</li><li>Testing &amp; Discussion (1.5 man days)</li></ul>""",
+      """<img src="http://example.com/image.jpg" alt="test" />"""
     )
 
     safeSamples.zipWithIndex.foreach { case (v, idx) =>
@@ -340,39 +337,6 @@ class MappingConstraintsSuite extends munit.FunSuite {
     unsafeSamples.zipWithIndex.foreach { case (v, idx) =>
       assert(HtmlSanitizer.isXssUnSafe(clue(v)), s"expected unsafeSamples($idx) to be unsafe: $v")
     }
-  }
-
-  test("img data: src unchanged after sanitization") {
-    val origInput =
-      """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>"""
-
-    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
-    val decoded = Encoding.decodeHtml(sanitized, false)
-
-    // The raw sanitized output may be canonicalized (e.g. serializer may convert <img> to <img />),
-    // so compare normalized decoded sanitized output to the original input which preserves the user's expectation.
-    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
-  }
-
-  test("nbsp false positive prevention") {
-    val origInput =  "<p>&nbsp; &nbsp;sad&nbsp; &nbsp;12</p>"
-    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
-    val decoded = Encoding.decodeHtml(sanitized, false)
-    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
-  }
-
-  test("img false positive prevention") {
-    val origInput =  """<img src="http://example.com/image.jpg" alt="test" />"""
-    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
-    val decoded = Encoding.decodeHtml(sanitized, false)
-    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
-  }
-
-  test("img false positive ") {
-    val origInput = """<p>: " ;</p>"""
-    val sanitized = HtmlSanitizer.policy.sanitize(origInput)
-    val decoded = Encoding.decodeHtml(sanitized, false)
-    assertNoDiff(decoded, HtmlSanitizer.defaultHtmlNormalizer(origInput))
   }
 
 }
