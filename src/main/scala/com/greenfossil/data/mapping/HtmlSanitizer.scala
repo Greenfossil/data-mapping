@@ -149,7 +149,7 @@ object HtmlSanitizer:
   private val safelist: Safelist = Safelist.relaxed()
     .addTags(
       "font", "span", "sub", "sup", "u", "s", "strike",
-      "thead", "th", "img"
+      "thead", "th", "img", "hr"
     )
     .addAttributes("img", "align", "alt", "height", "src", "title", "width", "style")
     .addProtocols("img", "src", "http", "https", "data")
@@ -232,7 +232,7 @@ object HtmlSanitizer:
       }
 
 
-      val isEqual = originalDoc.html().equals(cleanedDoc.html())
+      val isEqual = originalDoc.html().replaceAll("\\s+", " ").trim().equals(cleanedDoc.html().replaceAll("\\s+", " ").trim())
       val isSafe = isEqual && !(removedTagDetected || unsafeAttrs)
       if !isSafe then
         htmlSanitizerLogger.warn(s"XssNotSafe\ninput:[$input]\noriginalDoc:[$originalDoc]\ncleanedDoc:[$cleanedDoc]")

@@ -280,13 +280,15 @@ class MappingConstraintsSuite extends munit.FunSuite {
       """<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII" style="width: 100%; max-width: 1071px; height: auto; max-height: 590px;"></p>""".stripMargin,
       """<p>: " ;</p>""",
       """<p>Estimated man days: 5 man days</p><ul><li>Enhance fast booking page (1man day)</li><ul><li>Allow smoother booking through mobile</li><li>Press and drag timeslots</li></ul><li>Allow normal members to book through fast booking (1 man day)</li><li>Recurring ordinary booking (1.5 man days)</li><li>Testing &amp; Discussion (1.5 man days)</li></ul>""",
-      """<img src="http://example.com/image.jpg" alt="test" />"""
+      """<img src="http://example.com/image.jpg" alt="test" />""",
+      """<div style="padding: 0 10px; margin: 0; color: #cd0000; font-family: Arial;"> <h1 style="padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1.5px solid #c5c5c5;"><table style="font-family: Arial; font-size: 1rem; color: rgba(0, 0, 0, 0.87); margin: 20px 0px;"><tbody><tr><td style="padding-right: 12px; width: 190px"><strong>Remarks: </strong></td><td>Body arriving on Thurs, 1 Jan 2026 at 10.30am.<br><br><b>Point of Contact:&nbsp;<font color="#0101ff">12345678<br></font>No necessity to call. Please visit according to stipulated timing as below.&nbsp;<u><font color="#0101ff">Visitation hours:</font></u><br>1. Thu: 11.00am to 9.00pm<br>2. Fri: 11.00am to 2.00pm</b></td></tr></tbody></table></h1></div>"""
     )
 
     safeSamples.zipWithIndex.foreach { case (v, idx) =>
       assert(HtmlSanitizer.isXssSafe(clue(v)), s"expected safeSamples($idx) to be safe: $v")
     }
   }
+
 
   test("HtmlSanitizer.isXssUnsafe") {
     // A more exhaustive list of known XSS payload variants that should be detected
