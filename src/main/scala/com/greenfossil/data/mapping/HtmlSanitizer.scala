@@ -158,6 +158,7 @@ object HtmlSanitizer:
     .addAttributes("font", "color", "face", "size")
     .addAttributes("th", "colspan", "rowspan")
     .addAttributes("a", "href", "target")
+    .addProtocols("a", "href", "http", "https", "mailto", "#")
 
   private val htmlTagPattern = "(?is)<[^>]+>".r
   private val obfuscatedEventHandlerPattern = "(?i)\\bon[a-z]{2,20}[^=<>]{0,100}=".r
@@ -171,11 +172,43 @@ object HtmlSanitizer:
     hasObfuscatedEvent || dangerousProtocols.findFirstIn(input).nonEmpty
   }
 
+  // Pattern to match template variables like ${variableName}
+  private val templateVariablePattern = "^\\$\\{[a-zA-Z_][a-zA-Z0-9_]*\\}$".r
+
   /** Clean HTML and remove unsafe data: URLs */
   def sanitize(input: String): String = {
-    val cleaned = Jsoup.clean(input, safelist)
+    // First, extract and preserve template variables in href before cleaning
+    val inputDoc = Jsoup.parseBodyFragment(input)
+    inputDoc.outputSettings().prettyPrint(false)
+
+    val hrefTemplateVars = scala.collection.mutable.Map[String, String]()
+    var counter = 0
+    inputDoc.select("a[href]").asScala.foreach { anchor =>
+      val href = anchor.attr("href").trim
+      if (templateVariablePattern.matches(href)) {
+        // Store this template variable with a numeric marker
+        counter += 1
+        val marker = s"TEMPLATE_VAR_$counter"
+        hrefTemplateVars(marker) = href
+        // Use # which is an allowed protocol
+        anchor.attr("href", s"#$marker")
+      }
+    }
+
+    val modifiedInput = inputDoc.body().html()
+    val cleaned = Jsoup.clean(modifiedInput, safelist)
     val doc = Jsoup.parseBodyFragment(cleaned)
     doc.outputSettings().prettyPrint(false)
+
+    // Restore template variables in href attributes
+    doc.select("a[href]").asScala.foreach { anchor =>
+      val href = anchor.attr("href")
+      hrefTemplateVars.foreach { case (marker, templateVar) =>
+        if (href == s"#$marker") {
+          anchor.attr("href", templateVar)
+        }
+      }
+    }
 
     // Remove unsafe data:image URLs
     doc.select("img[src]").asScala.foreach { img =>
