@@ -72,7 +72,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(boundMissingField.bindingValueOpt, None)
 
     val boundEmptyField = field.bind("field" -> "")
-    assertEquals(boundEmptyField.errors, Nil)
+    assertEquals(boundEmptyField.errors.nonEmpty, true)
     assertEquals(boundEmptyField.typedValueOpt, Some(None))
     assertEquals(boundEmptyField.bindingValueOpt, Some(""))
 
@@ -449,7 +449,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assert(boundMissingValueField3.errors.isEmpty)
 
     val boundEmptyValueField = form.bind("age" -> "", "name" -> "")
-    assertEquals(boundEmptyValueField.errors, Nil)
+    assertEquals(boundEmptyValueField.errors.nonEmpty, true)
 
     val boundField = form.bind("age" -> "8", "name" -> "homer")
     assert(boundField.errors.isEmpty)
@@ -510,7 +510,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     val boundEmptyValueForm = form.bind("age" -> "")
     assertEquals(boundEmptyValueForm.typedValueOpt, Some(None)) //Should not have an error
-    assertEquals(boundEmptyValueForm.errors, Nil)
+    assertEquals(boundEmptyValueForm.errors.nonEmpty, true)
 
     val boundValueForm = form.bind("age" -> "8")
     assertEquals(boundValueForm.typedValueOpt, Option(Some(8)))
@@ -536,7 +536,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
 
     //EmptyValue
     val boundEmptyValue = form.bind("name" -> "")
-    assertEquals(boundEmptyValue.errors, Nil)
+    assertEquals(boundEmptyValue.errors.nonEmpty, true)
     assertEquals(boundEmptyValue.typedValueOpt, Some(None))
 
     //With Value
@@ -552,7 +552,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(form.bind().errors, Nil)
 
     assertEquals(form.bind("date" -> "").typedValueOpt, Option(None))
-    assertEquals(form.bind("date" -> "").errors, Nil)
+    assertEquals(form.bind("date" -> "").errors.nonEmpty, true)
 
     assertEquals(form.bind("date" -> "2022-01-01").typedValueOpt, Option(Some(LocalDate.parse("2022-01-01"))))
     assertEquals(form.bind("date" -> "2022-01-01").errors, Nil)
@@ -565,7 +565,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(form.bind().errors, Nil)
 
     assertEquals(form.bind("email" -> "").typedValueOpt, Option(None))
-    assertEquals(form.bind("email" -> "").errors, Nil)
+    assertEquals(form.bind("email" -> "").errors.nonEmpty, true)
 
     assertEquals(form.bind("email" -> "support@greenfossil.com").typedValueOpt, Option(Some("support@greenfossil.com")))
     assertEquals(form.bind("email" -> "support@greenfossil.com").errors, Nil)
@@ -671,11 +671,12 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
       )
     )
     val boundEmptyField = form.bind("contact.type" -> "", "contact.value" -> "")
-    assertEquals(boundEmptyField.errors, Nil)
+    //TODO - need more time to decide if this should be an error or not. Currently, it is not an error as the optionalTuple will treat empty value as None
+    assertEquals(boundEmptyField.errors.isEmpty, true)
     assertEquals(boundEmptyField.typedValueOpt, Option(None))
 
     val missingBoundField = form.bind()
-    assertEquals(missingBoundField.errors, Nil)
+    assertEquals(missingBoundField.errors.isEmpty, true)
     assertEquals(missingBoundField.typedValueOpt, Option(None))
 
     val partialBoundField = form.bind("contact.type" -> "hello", "contact.value" -> "")
@@ -688,7 +689,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
   }
 
   test("optionalTuple with optional(longNumber) and verifying"){
-    val form = Mapping(
+    val form: Mapping[Option[(String, Option[Long])]] = Mapping(
       "user", optionalTuple(
         "name" -> nonEmptyText,
         "userId" -> optional(longNumber)
@@ -704,7 +705,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(boundEmptyField.typedValueOpt, Option(None))
 
     val invalidField = form.bind("user.name" -> "Simpson", "user.userId" -> "")
-    assertEquals(invalidField.errors.map(_.message), Seq("Simpsons need to have userIds"))
+    assertEquals(invalidField.errors.map(_.message), Seq("Simpsons need to have userIds", "error.number"))
     assertEquals(invalidField.typedValueOpt, Option(Option("Simpson", None)))
 
     val validField = form.bind("user.name" -> "Simpson", "user.userId" -> "3")
@@ -713,7 +714,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
   }
 
   test("optionalTuple with boolean"){
-    val form = Mapping(
+    val form: Mapping[Option[(Boolean, Option[Long], String)]] = Mapping(
       "user", optionalTuple(
         "isMember" ->  boolean, //optional(nonEmptyText).transform[Boolean](opt => opt.contains("true"), bool => Option(bool.toString)),
         "userId" -> optional(longNumber),
@@ -753,7 +754,7 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(form.bind("phoneNo" -> "abc88776655").hasErrors, true)
     assertEquals(form.bind("phoneNo" -> "88776655").errors, Nil)
     assertEquals(form.bind().errors, Nil)
-    assertEquals(form.bind("phoneNo" -> "").errors, Nil)
+    assertEquals(form.bind("phoneNo" -> "").errors.nonEmpty, true)
   }
   
 }

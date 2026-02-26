@@ -78,33 +78,45 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
   override def bind(prefix: String, jsValue: JsValue): OptionalMapping[A] =
     setAndVerifyBoundMapping(mapping.bind(prefix, jsValue))
 
+  import MappingError.*
+  private val DiscardOptionalBinderErrors: List[String] = List(REQUIRED, REAL, REAL_PRECISION, NUMBER, BOOLEAN, DATE, TIMESTAMP, LOCALDATETIME, LOCALTIME, YEARMONTH, UUID, EMAIL, PHONE, MOBILE)
+
   private def setAndVerifyBoundMapping(boundMapping: Mapping[A]): OptionalMapping[A] =
-    val boundValue = boundMapping.typedValueOpt match
-      case Some(p: Product) =>
-        //if a Product has all fields as None, then the boundValue will be None
-        if p.productIterator.forall {
-          case None => true
-          case "" => true
-          case Some("") => true
-          case _ => false
-        } then None else Some(p)
-      case Some("") => None
-      case Some(other) => Some(other)
-      case None => None
+
+    val boundValue: Option[A] =
+      boundMapping.typedValueOpt match {
+        case None => None
+        case Some("") => None
+        case Some(p: Product) =>
+          //if a Product has all fields as None, then the boundValue will be None
+          if p.productIterator.forall {
+            case None => true
+            case "" => true
+            case Some("") => true
+            case Some(other) => true
+            case x => false
+          } then None else Some(p)
+        case Some(other) => Some(other)
+      }
+
     val errors =
       if mapping.hasAnyConstraints(Constraints.REQUIRED) && boundValue.isEmpty  then Nil
       else applyConstraints(boundValue)
-    val boundErrors =
-    //if boundValue isDefined then retain boundMapping.error else filter out errors in the Mapping.fields
+
+    val boundMappingErrors = {
+      //if boundValue isDefined then retain boundMapping.error else filter out errors in the Mapping.fields
       if boundValue.isDefined then boundMapping.errors
       else
         boundMapping.errors.flatMap { e =>
-          //if boundField.bindingValue is nonEmpty then retain error else remove BinderErrors
-          val nonEmptyValue = Option(boundMapping(e.key)).exists(_.bindingValueOpt.exists(_.nonEmpty))
-          if nonEmptyValue then Option(e)
-          else MappingError.discardMessages(e, MappingError.DiscardOptionalBinderErrors)
+          //if boundMapping.bindingValue is nonEmpty then retain error else remove BinderErrors
+          val hasBindingValue = boundMapping.bindingValueOpt.exists(_.isEmpty)
+          if hasBindingValue then Some(e)
+          else
+            MappingError.discardMessages(e, DiscardOptionalBinderErrors)
         }
-    copy(mapping = boundMapping, typedValueOpt = Option(boundValue), errors = errors ++ boundErrors)
+    }
+
+    copy(mapping = boundMapping, typedValueOpt = Option(boundValue), errors = errors ++ boundMappingErrors)
 
   /**
    *

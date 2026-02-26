@@ -16,8 +16,6 @@
 
 package com.greenfossil.data.mapping
 
-import org.owasp.html.Encoding
-
 class MappingConstraintsSuite extends munit.FunSuite {
   import Mapping.*
 

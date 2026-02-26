@@ -173,4 +173,25 @@ class MappingBugSuite extends munit.FunSuite {
     assertEquals(filledForm.boundValueIndexes.size, 2)
   }
 
+  test("optional tuple with required 2 fields") {
+    val form =
+      tuple(
+        "id" -> longNumber,
+        "firstname" -> optional(nonEmptyText),
+        "lastname" -> optional(nonEmptyText)
+      )
+
+    val boundIdForm = form.bind("id" -> "1")
+    assertEquals(boundIdForm.errors, Nil)
+    assertEquals(boundIdForm.typedValueOpt, Some((1L, Option.empty[String], Option.empty[String])))
+
+    val boundIdAndNamesForm = form.bind("id" -> "1" , "firstname" -> "Homer", "lastname" -> "Simpson")
+    assertEquals(boundIdAndNamesForm.errors, Nil)
+    assertEquals(boundIdAndNamesForm.typedValueOpt, Some((1L, Some("Homer"), Some("Simpson"))))
+
+    val boundIdAndWithMissingNameForm = form.bind("id" -> "1", "firstname" -> "Homer",  "lastname" -> "")
+    assertEquals(boundIdAndWithMissingNameForm.errors.nonEmpty, true,     s"expected error.required for missing lastname, but got no errors")
+    boundIdAndWithMissingNameForm.errors.foreach(e => println(s"error key: ${e.key}, message: ${e.message}"))
+  }
+
 }
