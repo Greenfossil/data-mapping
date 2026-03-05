@@ -311,12 +311,12 @@ trait MappingInlines:
   inline def optional[A]: Mapping[Option[A]] =
     optional(mapTo[A])
 
-  def optional[A](mapping: Mapping[A]): Mapping[Option[A]] =
+  def optional[A](mapping: Mapping[A], strict: Boolean = false): Mapping[Option[A]] =
     mapping match {
       case _: FieldMapping[A] =>
-          OptionalMapping("?"+mapping.tpe, mapping = mapping.setBindingPredicate(BindingPredicate.Value))
+          OptionalMapping("?"+mapping.tpe, mapping = mapping.setBindingPredicate(BindingPredicate.Value), strict = strict)
       case _ : Mapping[A] =>
-          OptionalMapping("?"+mapping.tpe, mapping = mapping)
+          OptionalMapping("?"+mapping.tpe, mapping = mapping, strict = strict)
     }
 
   inline def optionalTuple[A <: Tuple](nameValueTuple: A): Mapping[Option[FieldTypeExtractor[A]]] =

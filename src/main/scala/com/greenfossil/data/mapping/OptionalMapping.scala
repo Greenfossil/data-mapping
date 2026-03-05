@@ -18,10 +18,16 @@ package com.greenfossil.data.mapping
 
 import com.greenfossil.commons.json.JsValue
 
-case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
-                              typedValueOpt: Option[Option[A]] = None,
-                              errors: Seq[MappingError] = Nil,
-                              constraints: Seq[Constraint[Option[A]]] = Nil) extends Mapping[Option[A]]:
+case class OptionalMapping[A](
+                               tpe: String, mapping: Mapping[A],
+                               typedValueOpt: Option[Option[A]] = None,
+                               errors: Seq[MappingError] = Nil,
+                               constraints: Seq[Constraint[Option[A]]] = Nil,
+                               /**
+                                * If strict is true, then binding error for all empty string if reported
+                                */
+                               strict: Boolean = false
+                             ) extends Mapping[Option[A]]:
 
   override def isRequired: Boolean = false
 
@@ -69,7 +75,7 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
 
   override def fillAndVerify(newValueOpt: Option[A])(toVerify: Boolean): OptionalMapping[A] =
     val filledMapping = newValueOpt.fold(mapping)(newValue => mapping.fillAndVerify(newValue)(toVerify))
-    val errors = if !toVerify then Nil else  applyConstraints(filledMapping.typedValueOpt)
+    val errors = if !toVerify then Nil else applyConstraints(filledMapping.typedValueOpt)
     copy(mapping = filledMapping, typedValueOpt = Some(filledMapping.typedValueOpt), errors = errors)
 
   override def bindUsingPrefix(prefix: String, data: Map[String, Seq[String]]): OptionalMapping[A] =
@@ -79,6 +85,7 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
     setAndVerifyBoundMapping(mapping.bind(prefix, jsValue))
 
   import MappingError.*
+
   private val DiscardOptionalBinderErrors: List[String] = List(REQUIRED, REAL, REAL_PRECISION, NUMBER, BOOLEAN, DATE, TIMESTAMP, LOCALDATETIME, LOCALTIME, YEARMONTH, UUID, EMAIL, PHONE, MOBILE)
 
   private def setAndVerifyBoundMapping(boundMapping: Mapping[A]): OptionalMapping[A] =
@@ -93,14 +100,14 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
             case None => true
             case "" => true
             case Some("") => true
-            case Some(other) => true
-            case x => false
+            case Some(_) => true
+            case _ => false
           } then None else Some(p)
         case Some(other) => Some(other)
       }
 
     val errors =
-      if mapping.hasAnyConstraints(Constraints.REQUIRED) && boundValue.isEmpty  then Nil
+      if mapping.hasAnyConstraints(Constraints.REQUIRED) && boundValue.isEmpty then Nil
       else applyConstraints(boundValue)
 
     val boundMappingErrors = {
@@ -108,8 +115,7 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
       if boundValue.isDefined then boundMapping.errors
       else
         boundMapping.errors.flatMap { e =>
-          //if boundMapping.bindingValue is nonEmpty then retain error else remove BinderErrors
-          val hasBindingValue = boundMapping.bindingValueOpt.exists(_.isEmpty)
+          val hasBindingValue = strict && Option(boundMapping(e.key)).exists(_.bindingValueOpt.exists(_.isEmpty))
           if hasBindingValue then Some(e)
           else
             MappingError.discardMessages(e, DiscardOptionalBinderErrors)
@@ -121,9 +127,9 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
   /**
    *
    * @return - the number of Mapping fields
-   *         For FieldMapping/SeqMapping = 1,
-   *         ProductMapping = N fields,
-   *         TransformMapping - depends on the underlying Mapping[A]
+   * For FieldMapping/SeqMapping = 1,
+   * ProductMapping = N fields,
+   * TransformMapping - depends on the underlying Mapping[A]
    */
   override def noOfFields: Int =
     mapping.noOfFields
@@ -138,10 +144,10 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
   /**
    *
    * @return - the field names of the Mapping
-   * For FieldMapping - Seq(name)
-   * ProductMapping - Seq of fieldNames which is
-   * SeqMapping - Seq(name)
-   * TransformMapping - depends on the underlying Mapping[A]
+   *           For FieldMapping - Seq(name)
+   *           ProductMapping - Seq of fieldNames which is
+   *           SeqMapping - Seq(name)
+   *           TransformMapping - depends on the underlying Mapping[A]
    */
   override def fieldBindingNames: Seq[String] =
     mapping.fieldBindingNames
@@ -149,10 +155,10 @@ case class OptionalMapping[A](tpe: String, mapping: Mapping[A],
   /**
    *
    * @return - number of value bound to Mapping
-   *         For FieldMapping - min 0, max 1
-   *         ProductMapping - min 0, max 1
-   *         SeqMapping - min 0, max N - number of elements in the Seq
-   *         TransformMapping - depends on the underlying Mapping[A]
+   * For FieldMapping - min 0, max 1
+   * ProductMapping - min 0, max 1
+   * SeqMapping - min 0, max N - number of elements in the Seq
+   * TransformMapping - depends on the underlying Mapping[A]
    */
   override def boundValueIndexes: Seq[Int] =
     mapping.boundValueIndexes

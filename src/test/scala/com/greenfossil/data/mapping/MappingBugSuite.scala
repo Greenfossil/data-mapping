@@ -177,8 +177,8 @@ class MappingBugSuite extends munit.FunSuite {
     val form =
       tuple(
         "id" -> longNumber,
-        "firstname" -> optional(nonEmptyText),
-        "lastname" -> optional(nonEmptyText)
+        "firstname" -> optional(nonEmptyText, strict = true), /*enforce the strict binding of empty string*/
+        "lastname" -> optional(nonEmptyText, strict = true) /*enforce the stric binding of empty string*/
       )
 
     val boundIdForm = form.bind("id" -> "1")
