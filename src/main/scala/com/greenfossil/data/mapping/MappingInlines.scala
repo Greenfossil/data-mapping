@@ -309,9 +309,12 @@ trait MappingInlines:
       case m: Mapping[?] => m
 
   inline def optional[A]: Mapping[Option[A]] =
-    optional(mapTo[A])
+    optional[A](mapTo[A])
 
-  def optional[A](mapping: Mapping[A], strict: Boolean = false): Mapping[Option[A]] =
+  def optional[A](mapping: Mapping[A]): Mapping[Option[A]] =
+    optional(mapping, strict = false)
+
+  def optional[A](mapping: Mapping[A], strict: Boolean): Mapping[Option[A]] =
     mapping match {
       case _: FieldMapping[A] =>
           OptionalMapping("?"+mapping.tpe, mapping = mapping.setBindingPredicate(BindingPredicate.Value), strict = strict)
