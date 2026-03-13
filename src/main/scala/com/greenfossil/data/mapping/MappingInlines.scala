@@ -129,7 +129,7 @@ trait MappingInlines:
   inline def shortNumber: FieldMapping[Short] =
     FieldMapping("Short", binder = Binder.shortFormat)
 
-  inline def shortNumber(min: Short = Short.MinValue, max: Short = Short.MinValue, strict: Boolean = false): Mapping[Short] =
+  inline def shortNumber(min: Short = Short.MinValue, max: Short = Short.MaxValue, strict: Boolean = false): Mapping[Short] =
     shortNumber.verifying(Constraints.min[Short](min, strict), Constraints.max[Short](max, strict))
 
   inline def number: FieldMapping[Int] =

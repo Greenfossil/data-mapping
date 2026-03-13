@@ -117,7 +117,7 @@ case class FieldMapping[A](tpe: String,
     copy(constraints = constraints ++ newConstraints)
 
   override def removeConstraints(nameRegex: String): FieldMapping[A] =
-    copy(constraints = constraints.filter(c => c.name.exists(n => n.matches(nameRegex))))
+    copy(constraints = constraints.filterNot(c => c.name.exists(n => n.matches(nameRegex))))
 
   override def apply[B](key: String): FieldMapping[B] =
     this.asInstanceOf[FieldMapping[B]]
