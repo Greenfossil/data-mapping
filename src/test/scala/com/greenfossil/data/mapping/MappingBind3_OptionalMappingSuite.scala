@@ -153,6 +153,17 @@ class MappingBind3_OptionalMappingSuite extends munit.FunSuite {
     assertEquals(boundField.typedValueOpt, Option(Option(("Hello World!", 123))))
   }
 
+  test("Option[Tuple] with optional(text)") {
+    val tupleField: Mapping[Option[(Option[String], Option[String])]] = optionalTuple(
+      "name" -> optional(text),
+      "contact" -> optional(text)
+    ).name("tupleField")
+
+    val boundField1 = tupleField.bind("tupleField.name" -> "Hello World!", "tupleField.contact" -> "88776655")
+    assert(boundField1.typedValueOpt.nonEmpty)
+    assertEquals(boundField1.typedValueOpt.get, Option((Option("Hello World!"), Option("88776655"))))
+  }
+
   test("Option[Mapping]") {
     case class Contact(name: String, contact: Int)
     val tupleField: Mapping[Option[Contact]] = optionalMapping[Contact](
