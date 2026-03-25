@@ -100,7 +100,6 @@ case class OptionalMapping[A](
             case None => true
             case "" => true
             case Some("") => true
-            case Some(_) => true
             case _ => false
           } then None else Some(p)
         case Some(other) => Some(other)
