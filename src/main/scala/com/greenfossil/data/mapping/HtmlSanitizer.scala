@@ -1,6 +1,5 @@
 package com.greenfossil.data.mapping
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.jsoup.Jsoup
 import org.jsoup.safety.Safelist
 import org.owasp.html.{AttributePolicy, Encoding, HtmlPolicyBuilder}
@@ -315,7 +314,6 @@ object HtmlSanitizer:
                            wrapperClass: String = "xss-detected"): String =
     if input == null then null
     else
-      // Keep JSON false-positive avoidance
       if containsUnsafe(input) then {
         val encodedXss = encodeUnsafeXss(input)
         s"""<$wrapperTag class="$wrapperClass">[XSS Detected: $encodedXss]</$wrapperTag>"""
@@ -344,26 +342,10 @@ object HtmlSanitizer:
       Encoding.encodeRcdataOnto(untrustedInput,sb)
       sb.toString
 
-  private val jsonMapper = new ObjectMapper()
-
-  /** Returns true when sanitizer modified input (heuristic detection of unsafe content).
-   * Avoid false positives for JSON by detecting and validating JSON before sanitizing.
-   */
+  /** Returns true when sanitization changes the input (heuristic detection of unsafe content).
+    * HTML-free JSON and plain text are therefore treated as safe.
+    */
   def containsUnsafe(input: String): Boolean =
-      // If there are no obvious HTML markers, treat as non-HTML.
-      if isXssUnSafe(input) then true
-      else {
-        //Check if input is Json
-        // If it looks like JSON, try to parse it; valid JSON is not HTML else return true since it is XssSafe
-        val trimmed = input.trim
-        if trimmed.startsWith("{") || trimmed.startsWith("[") then
-          try
-            jsonMapper.readTree(trimmed)
-            false
-          catch
-            case _: Exception => false // not valid JSON but also no HTML markers -> treat as safe
-        else
-          false /*false means it is safe*/
-      }
+    isXssUnSafe(input)
 
 end HtmlSanitizer
