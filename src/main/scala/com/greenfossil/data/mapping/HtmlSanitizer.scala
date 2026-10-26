@@ -1,10 +1,13 @@
 package com.greenfossil.data.mapping
 
 import org.jsoup.Jsoup
+import org.jsoup.nodes.{Document, Element}
+import org.jsoup.parser.Tag
 import org.jsoup.safety.Safelist
 import org.owasp.html.{AttributePolicy, Encoding, HtmlPolicyBuilder}
 import org.slf4j.LoggerFactory
 
+import java.util.Locale
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -15,6 +18,9 @@ import scala.jdk.CollectionConverters.*
 object HtmlSanitizer:
 
   private val htmlSanitizerLogger = LoggerFactory.getLogger("data-mapping.HtmlSanitizer")
+
+  // base64-encoded image data: URI payloads (the only data: form allowed for href and img src)
+  private val dataImageUriRegex = "^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$"
 
   val aHrefPolicy: AttributePolicy =
     (elementName: String, attributeName: String, value: String) => {
@@ -30,7 +36,7 @@ object HtmlSanitizer:
               case Some("http"|"https"|"mailto") => v
               case Some("data") =>
                 // allow only image data URIs with base64 payload
-                if (v.matches("^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$")) v else null
+                if (v.matches(dataImageUriRegex)) v else null
               case None =>
                 // only allow site-relative paths
                 if (v.startsWith("/")) v else null
@@ -60,7 +66,7 @@ object HtmlSanitizer:
                 if hasHost && path.matches("(?i).+\\.(png|jpe?g|gif|webp)$") then v else null
               case Some("data") =>
                 // allow only image data URIs with base64 payload
-                if (v.matches("^data:image/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$")) v else null
+                if (v.matches(dataImageUriRegex)) v else null
               case _ => null
             }
           } catch {
@@ -95,6 +101,73 @@ object HtmlSanitizer:
   */
   val htmlLikeRegex =
     """(?i)<\s*/?\s*[a-z][a-z0-9]*\b(?:[^>]*>?|$)""".r
+
+  // Structural elements produced by the HTML parser itself; never candidates for unwrapping.
+  private val structuralTags = Set("#root", "html", "head", "body")
+
+  /** True when an unknown element can only have come from a plain-text `<...>` token.
+    *
+    * Two parser-level facts distinguish text from markup here:
+    *  - attributes are only created when the tokenizer saw a `name=value` pair inside the tag,
+    *    which plain prose never produces;
+    *  - a tag name containing `<` means the input was malformed markup (e.g. `<scr<script>ipt>`),
+    *    because a single text token stops at the first `<`.
+    * Unknown elements that fail either test are left in place, so the sanitize-vs-original
+    * comparison still flags them as modified (fail closed).
+    */
+  private def isPlainTextTokenElement(el: Element): Boolean =
+    el.attributes().isEmpty && !el.tagName.contains('<')
+
+  /** Removes elements whose tag is not a real HTML element by unwrapping them (children kept).
+    *
+    * Plain text such as an Outlook-style quote — `From: Alice Tan <alice.tan@example.com>` — is not
+    * markup, but Jsoup's parser reads `<alice.tan@example.com>` as the start tag
+    * `alice.tan@example.com` and therefore creates an element for it. Such a bogus tag must not
+    * count as markup, otherwise sanitization (which drops unknown tags) appears to change the
+    * input and legitimate text is reported as an XSS attempt. Jsoup is the source of truth for
+    * "is this a real HTML element" (`Tag.isKnownTag`), so no pattern-matching is needed here.
+    *
+    * Only text-like unknown elements are unwrapped (see `isPlainTextTokenElement`), and children
+    * are kept so a genuine known tag nested inside an unknown one is preserved.
+    *
+    * `Element.unwrap()` is deliberately not used: it removes one child at a time and re-indexes the
+    * parent's sibling list on every call, which is quadratic when many unknown siblings share a
+    * parent (e.g. `"<x>" * 100_000`, reachable through an unbounded `optional(text)` field).
+    * Instead each affected parent's child list is rebuilt once, preserving order; nodes outside
+    * the candidate set are left untouched. Linear overall.
+    */
+  private def unwrapUnknownElements(doc: Document): Document =
+    val candidates = doc.getAllElements.asScala.toList
+      .filterNot(el => structuralTags.contains(el.tagName))
+      .filterNot(el => Tag.isKnownTag(el.tagName))
+      .filter(isPlainTextTokenElement)
+    candidates.groupBy(_.parent()).toList
+      // deepest parents first, so nested unknown tags are flattened before their own parent is
+      .sortBy { case (parent, _) => -parent.parents.asScala.size }
+      .foreach { case (parent, elements) =>
+        val unwrap = elements.toSet // Node equality is identity, so this is a pure membership test
+        val flattened = parent.childNodes.asScala.toList.flatMap {
+          case el: Element if unwrap.contains(el) => el.childNodes.asScala.toList
+          case other => List(other)
+        }
+        parent.empty()
+        parent.insertChildren(0, flattened.asJava)
+      }
+    doc
+
+  /** Collapses the formatting whitespace that the original and sanitized serializations disagree
+    * about, so it cannot decide the XSS verdict.
+    *
+    * `sanitize` (via `Jsoup.clean`) trims a trailing newline or space that the parser kept around a
+    * dropped tag — before `</body>`, `</p>`, `</div>` or `</td>`. Without this, `From: A <a@b.co>`
+    * followed by a newline compares unequal to its cleaned form even though nothing meaningful was
+    * removed. Whitespace adjacent to a tag boundary is formatting, not content.
+    */
+  private def normaliseHtml(html: String): String =
+    html.replaceAll("\\s+", " ")
+      .replaceAll(">\\s+", ">")
+      .replaceAll("\\s+<", "<")
+      .trim
 
   inline def isXssUnSafe(input: String): Boolean = !isXssSafe(input)
 
@@ -145,7 +218,46 @@ object HtmlSanitizer:
     "data:image/webp"
   )
 
+  /** Strips the URL control characters (tab/CR/LF) that a browser URL parser ignores.
+    *
+    * Without this, obfuscated targets such as `//evil.com` split by a tab or `\//evil.com`
+    * survive the protocol-relative check because the browser (not the raw string) sees `//evil.com`.
+    */
+  private def stripHrefControlChars(href: String): String =
+    href.filterNot(ch => ch == '\t' || ch == '\r' || ch == '\n').trim
+
+  /** Validates a link target that the safelist preserved verbatim.
+    *
+    * `preserveRelativeLinks` keeps relative references untouched (so `/we/index`, `#anchor` and
+    * `www.example.com` survive), which also means Jsoup no longer normalizes the value
+    * before the protocol check. This guard closes the two gaps that leaves:
+    *  - scheme-relative targets (`//host/...`, including `\\host/...` and `/\host/...` once
+    *    normalized the way a browser does) bypass the http/https protocol whitelist;
+    *  - a dangerous scheme hidden behind leading junk (`\"javascript:...`) is treated as a plain
+    *    relative reference.
+    */
+  private def isPreservedHrefSafe(href: String): Boolean =
+    // browser URL parsing: strip tab/CR/LF, then map '\' onto '/'
+    val stripped = stripHrefControlChars(href)
+    val normalized = stripped.replace('\\', '/')
+    if normalized.startsWith("//") then false
+    else
+      // Probe from the first alphanumeric char, ignoring leading quotes/backslashes/whitespace/junk,
+      // but never skip past a leading '/' or '#': those make the value a relative reference, which
+      // can never carry a scheme (so `#data:section` or `/help/javascript:guide` stay safe).
+      val probe = stripped.dropWhile(ch => !ch.isLetterOrDigit && ch != '/' && ch != '#').toLowerCase(Locale.ENGLISH)
+      if probe.startsWith("javascript:") || probe.startsWith("vbscript:") || probe.startsWith("file:") then false
+      else if probe.startsWith("data:") then probe.matches(dataImageUriRegex)
+      else true
+
   private val safelist: Safelist = Safelist.relaxed()
+    /*
+     * Preserve relative and scheme-less links (e.g. "/we/index", "www.example.com", "#anchor").
+     * Without this, Jsoup resolves hrefs against an empty base URI and strips them, so every legitimate
+     * relative link in an HTML email template is reported as an XSS modification. Protocol checking is
+     * still enforced: only http/https/mailto/# are allowed, so javascript:/data: hrefs are still removed.
+     */
+    .preserveRelativeLinks(true)
     .addTags(
       "font", "span", "sub", "sup", "u", "s", "strike",
       "thead", "th", "img", "hr"
@@ -209,7 +321,13 @@ object HtmlSanitizer:
       }
     }
 
-    // Remove unsafe data:image URLs
+    // Drop hrefs kept verbatim as relative references but which still carry a disallowed scheme
+    doc.select("a[href]").asScala.foreach { anchor =>
+      if !isPreservedHrefSafe(anchor.attr("href")) then anchor.removeAttr("href")
+    }
+
+    // Remove unsafe data:image URLs. Relative img[src] is intentionally unsupported (only absolute
+    // http(s) and image data: URLs are kept), so such images are dropped from sanitize output.
     doc.select("img[src]").asScala.foreach { img =>
       val src = img.attr("src").toLowerCase.trim
 
@@ -240,31 +358,48 @@ object HtmlSanitizer:
 
   /** Detect XSS safely */
   def isXssSafe(input: String): Boolean = {
+    // Cheap gates first: no tag-like text at all means there is nothing to sanitize.
     if input.isBlank || input.isEmpty || htmlLikeRegex.findFirstIn(input).isEmpty then true
     else if containsMaliciousPatterns(input) then
       //because Jsoup correct malform tags. any malform xss tags needs to be checked here
       htmlSanitizerLogger.warn(s"Input contains containsMaliciousPatterns: [$input]")
       false
     else
-      val cleaned = sanitize(input) // this will clean and remove any tags not conforming to the policy
-      val originalDoc = Jsoup.parseBodyFragment(input)
-      val cleanedDoc = Jsoup.parseBodyFragment(cleaned)
+      // Parse the raw input once and run both structural scans on it: they must see the original
+      // markup, before any normalization.
+      val rawDoc = Jsoup.parseBodyFragment(input)
 
-      // Check for any removed dangerous tags
+      val cleaned = sanitize(input) // this will clean and remove any tags not conforming to the policy
+
+      // Check for any removed dangerous tags. Jsoup does not consider `svg` a "known" tag, so this
+      // explicit list (rather than `Tag.isKnownTag`) is what keeps `<svg>` unsafe after unwrapping.
       val unsafeTags = Seq(
         "script", "iframe", "object", "embed", "link", "style", "svg"
       )
 
-      val removedTagDetected = originalDoc.select(unsafeTags.mkString(",")).asScala.nonEmpty &&
-        originalDoc.select(unsafeTags.mkString(",")).asScala.exists(tag => !safelist.isSafeTag(tag.tagName()))
+      val removedTagDetected = rawDoc.select(unsafeTags.mkString(",")).asScala.nonEmpty &&
+        rawDoc.select(unsafeTags.mkString(",")).asScala.exists(tag => !safelist.isSafeTag(tag.tagName()))
 
-      // Check for any removed event attributes
-      val unsafeAttrs = originalDoc.select("*").asScala.exists { el =>
+      // Check for any removed event attributes (on the raw document, before unwrapping)
+      val unsafeAttrs = rawDoc.select("*").asScala.exists { el =>
         el.attributes().asScala.exists(attr => attr.getKey.toLowerCase.startsWith("on"))
       }
 
+      /*
+       * Unwrapping unknown elements is what lets plain-text `<name@host>` tokens compare equal:
+       * both sides lose the bogus tag the parser invented for the address. It must NOT be used to
+       * skip the `containsMaliciousPatterns` / `unsafeAttrs` checks above — a payload such as
+       * `<x@y.com onerror=alert(1)>` would otherwise compare equal and be reported as safe.
+       *
+       * Both documents keep the default output settings on purpose: `sanitize` returns
+       * pretty-printed HTML, so serializing the two sides with different settings would report the
+       * indentation it introduces as a difference. Whitespace differences around tag boundaries
+       * are removed by `normaliseHtml` instead.
+       */
+      val originalDoc = unwrapUnknownElements(rawDoc)
+      val cleanedDoc = unwrapUnknownElements(Jsoup.parseBodyFragment(cleaned))
 
-      val isEqual = originalDoc.html().replaceAll("\\s+", " ").trim().equals(cleanedDoc.html().replaceAll("\\s+", " ").trim())
+      val isEqual = normaliseHtml(originalDoc.html()).equals(normaliseHtml(cleanedDoc.html()))
       val isSafe = isEqual && !(removedTagDetected || unsafeAttrs)
       if !isSafe then
         htmlSanitizerLogger.warn(s"XssNotSafe\ninput:[$input]\noriginalDoc:[$originalDoc]\ncleanedDoc:[$cleanedDoc]")

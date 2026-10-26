@@ -259,6 +259,11 @@ class MappingConstraintsSuite extends munit.FunSuite {
       // HTML with attributes that are benign (http/mailto) and benign data values
       "<a href=\"http://example.com\">link</a>",
       "<a href=\"mailto:foo@example.com\">email</a>",
+      // relative / scheme-less links are legitimate (email templates) and must not be stripped
+      "<a href=\"www.example.com\">x</a>",
+      "<a href=\"/we/index\">x</a>",
+      "<a href=\"#anchor\">x</a>",
+      "<a href=\"https://example.com\">x</a>",
       // text that includes angle brackets but is not HTML
       "1 < 2 and 3 > 2",
       // input with encoded entities and escapes
